@@ -2,7 +2,7 @@
     {
         "id": "8da2f8cc0782f23d",
         "type": "tab",
-        "label": "A07 · 1 Simulación (modelo físico)",
+        "label": "A07 · 1 Simulación (modelo físico) con cambio aplicado",
         "disabled": false,
         "info": "Modelo dinámico de la línea de embotellado. El estado vive en el contexto del nodo \"Modelo físico\". No publica nada directamente: entrega instantáneas a la pestaña de control."
     },
