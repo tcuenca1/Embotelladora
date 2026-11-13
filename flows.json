@@ -1,0 +1,1254 @@
+[
+    {
+        "id": "8da2f8cc0782f23d",
+        "type": "tab",
+        "label": "A07 · 1 Simulación (modelo físico)",
+        "disabled": false,
+        "info": "Modelo dinámico de la línea de embotellado. El estado vive en el contexto del nodo \"Modelo físico\". No publica nada directamente: entrega instantáneas a la pestaña de control."
+    },
+    {
+        "id": "641b3fb3abbb457e",
+        "type": "tab",
+        "label": "A07 · 2 Lógica de control y supervisión",
+        "disabled": false,
+        "info": "Validación de comandos, enclavamientos, prevención de duplicados, cálculo de KPI y motor de alarmas."
+    },
+    {
+        "id": "c3a9470f4d7a19e5",
+        "type": "tab",
+        "label": "A07 · 3 Comunicaciones MQTT (simulador)",
+        "disabled": false,
+        "info": "Único punto de contacto del simulador con el broker. Publica telemetry, status, alarms, alarms/active y ack; se suscribe a commands."
+    },
+    {
+        "id": "b41c932809e81bee",
+        "type": "tab",
+        "label": "A07 · 4 Presentación (dashboard)",
+        "disabled": false,
+        "info": "Cliente MQTT independiente. Sirve el dashboard propio en http://<host>:1880/a07 y lo comunica por WebSocket. Persiste alarmas e histórico en archivos."
+    },
+    {
+        "id": "96925e11e9f380d5",
+        "type": "mqtt-broker",
+        "name": "Broker A07 · simulador",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "utm-a07-sim-g8",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "15",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "utm/iot/A07/status",
+        "birthQos": "1",
+        "birthRetain": "true",
+        "birthPayload": "{\"deviceId\":\"A07-SIM-01\",\"project\":\"A07\",\"type\":\"status\",\"online\":true,\"lineState\":\"CONECTANDO\"}",
+        "birthMsg": {},
+        "closeTopic": "utm/iot/A07/status",
+        "closeQos": "1",
+        "closeRetain": "true",
+        "closePayload": "{\"deviceId\":\"A07-SIM-01\",\"project\":\"A07\",\"type\":\"status\",\"online\":false,\"lineState\":\"FUERA_DE_LINEA\"}",
+        "closeMsg": {},
+        "willTopic": "utm/iot/A07/status",
+        "willQos": "1",
+        "willRetain": "true",
+        "willPayload": "{\"deviceId\":\"A07-SIM-01\",\"project\":\"A07\",\"type\":\"status\",\"online\":false,\"lineState\":\"FUERA_DE_LINEA\"}",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "f5fb954d418a61e7",
+        "type": "mqtt-broker",
+        "name": "Broker A07 · dashboard",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "utm-a07-dash-g8",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "15",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "1",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "1",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "1",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a891cc73607f3329",
+        "type": "websocket-listener",
+        "path": "/ws/a07",
+        "wholemsg": "false"
+    },
+    {
+        "id": "997e14485526efbc",
+        "type": "comment",
+        "z": "8da2f8cc0782f23d",
+        "name": "Modelo físico de la línea A07 (ver informe, sección Modelo dinámico)",
+        "info": "El inject genera un \"tick\" cada 0,5 s. El modelo calcula dt real entre ticks e integra con sub-pasos de 50 ms:\n- velocidad: rampa limitada hacia la consigna\n- fase del ciclo: dφ/dt = v/60\n- llenado: dL/dt = Q/Vb·100 durante la zona de trabajo\n- perturbaciones: caudal (Ornstein-Uhlenbeck), micro-paradas del despaletizador, defectos aleatorios de tapa/etiqueta.\nLos comandos llegan ya validados desde la pestaña 2.",
+        "x": 230,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "dce8c94f286bfc80",
+        "type": "inject",
+        "z": "8da2f8cc0782f23d",
+        "name": "Tick 0,5 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "0.5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "tick",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 120,
+        "wires": [
+            [
+                "bd17fd133fb05add"
+            ]
+        ]
+    },
+    {
+        "id": "d2bd04fc4bf940d1",
+        "type": "link in",
+        "z": "8da2f8cc0782f23d",
+        "name": "cmd → modelo",
+        "links": [
+            "f0144dc239b9d61b"
+        ],
+        "x": 145,
+        "y": 180,
+        "wires": [
+            [
+                "bd17fd133fb05add"
+            ]
+        ]
+    },
+    {
+        "id": "bd17fd133fb05add",
+        "type": "function",
+        "z": "8da2f8cc0782f23d",
+        "name": "Modelo físico línea A07",
+        "func": "// =====================================================================\n// A07 · MODELO FÍSICO DE LA LÍNEA DE EMBOTELLADO (gemelo digital)\n// Entrada 1: msg.topic = \"tick\"  -> avanza el modelo según el tiempo real\n// Entrada 2: msg.topic = \"cmd\"   -> aplica un comando YA VALIDADO por la\n//                                  lógica de control (pestaña 2)\n// Salida 1: instantánea del estado (cada tick)\n// Salida 2: resultado de ejecución de un comando (para el /ack)\n// El estado vive SOLO en el contexto de este nodo (no se usan globales).\n// =====================================================================\n\n// ---------- Parámetros (valores didácticos de referencia) ----------\nconst P = {\n    NOMINAL: 24,          // envases/min  capacidad nominal de la línea\n    SP_MIN: 6,            // envases/min  consigna mínima\n    SP_MAX: 30,           // envases/min  consigna máxima admitida\n    ACC: 6,               // (envases/min)/s  rampa máxima del motor\n    TRANSFER: 0.25,       // fracción del ciclo usada para transferir envases\n    VB: 500,              // mL  volumen nominal del envase\n    Q_NOM: 300,           // mL/s caudal nominal de la válvula de llenado\n    TARGET: 95,           // %   llenado objetivo\n    TOL: 2,               // %   tolerancia de inspección (±)\n    CLOSE_SD: 0.4,        // %   dispersión del cierre de válvula\n    FILL_FAULT: 0.70,     // factor de caudal con boquilla obstruida\n    Q_TAU: 8,             // s   constante de tiempo de la perturbación de caudal\n    Q_SD: 0.03,           // -   desviación típica relativa de la perturbación\n    BUF_MAX: 30,          // envases  capacidad de la mesa de alimentación\n    SUPPLY: 28,           // envases/min  aporte del despaletizador\n    GAP_PROB: 0.01,       // 1/s probabilidad de micro-parada del despaletizador\n    GAP_MIN: 2, GAP_MAX: 6, // s duración de la micro-parada\n    CAP_MAX: 20,          // tapas  capacidad de la tolva\n    CAP_FEED: 30,         // tapas/min  alimentador de tapas\n    T_CAP: 0.5,           // s  tiempo de roscado\n    T_LABEL: 0.8,         // s  tiempo de etiquetado\n    P_CAP_DEF: 0.004,     // probabilidad de tapa mal roscada\n    P_LABEL_DEF: 0.005,   // probabilidad de etiqueta defectuosa\n    H: 0.05               // s  paso interno de integración\n};\n\n// ---------- Utilidades ----------\nfunction gauss() { // Box-Muller, N(0,1)\n    let u = 0, v = 0;\n    while (u === 0) u = Math.random();\n    while (v === 0) v = Math.random();\n    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);\n}\nconst clamp = (x, a, b) => Math.max(a, Math.min(b, x));\nconst r2 = x => Math.round(x * 100) / 100;\n\nfunction init() {\n    return {\n        simT: 0, lastWall: Date.now(), startedAt: new Date().toISOString(),\n        run: false, sp: P.NOMINAL, v: 0, phase: 0, holding: false,\n        Q: P.Q_NOM, qN: 0,\n        buffer: P.BUF_MAX, gapLeft: 0,\n        caps: P.CAP_MAX,\n        pk: [null, null, null, null, null], // 0 entrada,1 llenado,2 tapado,3 etiquetado,4 inspección\n        nextId: 1,\n        faults: { caps: false, fill: false, bottles: false, jam: false },\n        cnt: { total: 0, good: 0, rej: 0, cause: { NIVEL_BAJO: 0, NIVEL_ALTO: 0, TAPA: 0, ETIQUETA: 0 } },\n        tm: { planned: 0, up: 0, blocked: 0, starved: 0 },\n        blk: { capper: 0, labeler: 0 }, starvedFor: 0,\n        lastFill: null, lastFillTime: null,\n        events: []\n    };\n}\n\nlet s = context.get('s');\nif (!s) { s = init(); context.set('s', s); }\n\n// =====================================================================\n// 1) COMANDOS (ya validados por la pestaña de control)\n// =====================================================================\nif (msg.topic === 'cmd') {\n    const c = msg.payload || {};\n    let detail = '';\n    switch (c.action) {\n        case 'start':\n            detail = s.run ? 'La línea ya estaba en marcha' : 'Línea arrancando (rampa ' + P.ACC + ' env/min/s)';\n            s.run = true; break;\n        case 'stop':\n            detail = s.run ? 'Línea deteniéndose' : 'La línea ya estaba detenida';\n            s.run = false; break;\n        case 'setSpeed':\n            detail = 'Consigna ' + r2(s.sp) + ' → ' + c.value + ' envases/min';\n            s.sp = Number(c.value); break;\n        case 'fault':\n            s.faults[c.fault] = !!c.active;\n            detail = 'Perturbación \"' + c.fault + '\" ' + (c.active ? 'ACTIVADA' : 'retirada'); break;\n        case 'resetCounters':\n            s.cnt = init().cnt; s.tm = init().tm; s.lastFill = null; s.lastFillTime = null;\n            detail = 'Contadores y tiempos reiniciados'; break;\n        default:\n            detail = 'Acción desconocida';\n    }\n    context.set('s', s);\n    return [null, { topic: 'cmdResult', payload: {\n        cmdId: c.cmdId, action: c.action, value: c.value, source: c.source,\n        result: 'accepted', executed: true, detail: detail,\n        stateAfter: { run: s.run, speedSetpoint: s.sp, faults: Object.assign({}, s.faults) }\n    } }];\n}\n\nif (msg.topic !== 'tick') return null;\n\n// =====================================================================\n// 2) INTEGRACIÓN EN EL TIEMPO (dt real, sub-pasos de 50 ms)\n// =====================================================================\nconst now = Date.now();\nconst dt = clamp((now - s.lastWall) / 1000, 0, 2);\ns.lastWall = now;\ns.events = [];\nconst n = Math.max(1, Math.ceil(dt / P.H));\nconst h = dt / n;\nfor (let i = 0; i < n; i++) step(h);\n\nfunction newBottle() {\n    return { id: s.nextId++, fill: 0, fillDone: false, fillT: 0,\n             capOn: false, capT: 0, capped: false, labT: 0, labeled: false,\n             defects: [], reject: false, cause: null };\n}\n\nfunction step(h) {\n    s.simT += h;\n    // --- Perturbación del caudal: proceso de Ornstein-Uhlenbeck (presión del tanque pulmón)\n    s.qN += (-s.qN / P.Q_TAU) * h + P.Q_SD * Math.sqrt(2 / P.Q_TAU) * Math.sqrt(h) * gauss();\n    s.Q = P.Q_NOM * (s.faults.fill ? P.FILL_FAULT : 1) * (1 + s.qN);\n\n    // --- Alimentación de envases (despaletizador con micro-paradas aleatorias)\n    if (s.gapLeft > 0) s.gapLeft -= h;\n    else if (Math.random() < P.GAP_PROB * h) s.gapLeft = P.GAP_MIN + Math.random() * (P.GAP_MAX - P.GAP_MIN);\n    if (!s.faults.bottles && s.gapLeft <= 0) s.buffer = Math.min(P.BUF_MAX, s.buffer + P.SUPPLY / 60 * h);\n\n    // --- Alimentador de tapas\n    if (!s.faults.caps) s.caps = Math.min(P.CAP_MAX, s.caps + P.CAP_FEED / 60 * h);\n\n    const working = s.phase >= P.TRANSFER; // zona de trabajo del ciclo\n\n    // --- Estación 1: LLENADO (válvula temporizada por el ciclo, cierra al llegar al objetivo)\n    const b1 = s.pk[1];\n    if (b1 && working && !b1.fillDone) {\n        b1.fill += s.Q * h / P.VB * 100;   // dL/dt = Q / Vb · 100   [%/s]\n        b1.fillT += h;\n        if (b1.fill >= P.TARGET) { b1.fill = clamp(P.TARGET + gauss() * P.CLOSE_SD, 0, 100); b1.fillDone = true; }\n    }\n    // --- Estación 2: TAPADO (consume 1 tapa por envase)\n    const b2 = s.pk[2];\n    if (b2 && working && !b2.capped) {\n        if (!b2.capOn && s.caps >= 1) { s.caps -= 1; b2.capOn = true; }\n        if (b2.capOn) {\n            b2.capT += h;\n            if (b2.capT >= P.T_CAP) { b2.capped = true; if (Math.random() < P.P_CAP_DEF) b2.defects.push('TAPA'); }\n        }\n    }\n    // --- Estación 3: ETIQUETADO\n    const b3 = s.pk[3];\n    if (b3 && working && !b3.labeled && !s.faults.jam) {\n        b3.labT += h;\n        if (b3.labT >= P.T_LABEL) { b3.labeled = true; if (Math.random() < P.P_LABEL_DEF) b3.defects.push('ETIQUETA'); }\n    }\n\n    // --- Bloqueos de estación\n    const capBlocked = !!(b2 && working && !b2.capped && !b2.capOn && s.caps < 1);\n    const labBlocked = s.faults.jam;\n    s.blk.capper = capBlocked ? s.blk.capper + h : 0;\n    s.blk.labeler = labBlocked ? s.blk.labeler + h : 0;\n\n    // --- Dinámica del motor: la velocidad converge a la consigna con aceleración limitada\n    const target = (s.run && !s.holding) ? s.sp : 0;\n    s.v += clamp(target - s.v, -P.ACC * h, P.ACC * h);\n    if (s.v < 1e-6) s.v = 0;\n\n    // --- Avance del ciclo: fase 0→1 a razón de v/60 ciclos por segundo\n    if (s.phase < 1) s.phase += s.v / 60 * h;\n    if (s.phase >= 1) {\n        const canIndex = !(b2 && !b2.capped) && !(b3 && !b3.labeled) && !s.faults.jam;\n        if (canIndex && (s.run || s.v > 0)) { indexLine(); s.phase = Math.max(0, s.phase - 1); s.holding = false; }\n        else { s.phase = 1; s.holding = s.run && !canIndex; }\n    }\n\n    // --- Contabilidad de tiempos (disponibilidad)\n    const starved = s.run && s.buffer < 1;\n    s.starvedFor = starved ? s.starvedFor + h : 0;\n    if (s.run) {\n        s.tm.planned += h;\n        if (s.holding || capBlocked || labBlocked) s.tm.blocked += h;\n        else if (starved) s.tm.starved += h;\n        else if (s.v > 0.1) s.tm.up += h;\n    }\n}\n\nfunction inspect(b) {\n    const dev = b.fill - P.TARGET;\n    if (dev < -P.TOL) { b.reject = true; b.cause = 'NIVEL_BAJO'; }\n    else if (dev > P.TOL) { b.reject = true; b.cause = 'NIVEL_ALTO'; }\n    else if (b.defects.length) { b.reject = true; b.cause = b.defects[0]; }\n    s.lastFill = b.fill; s.lastFillTime = b.fillT;\n    s.events.push({ type: 'inspect', id: b.id, t: r2(s.simT), fill: r2(b.fill), fillOk: Math.abs(dev) <= P.TOL, reject: b.reject, cause: b.cause });\n}\n\nfunction indexLine() {\n    const out = s.pk[4];\n    if (out) {\n        s.cnt.total++;\n        if (out.reject) { s.cnt.rej++; s.cnt.cause[out.cause] = (s.cnt.cause[out.cause] || 0) + 1; } else s.cnt.good++;\n        s.events.push({ type: 'exit', id: out.id, t: r2(s.simT), reject: out.reject, cause: out.cause });\n    }\n    s.pk[4] = s.pk[3]; if (s.pk[4]) inspect(s.pk[4]);\n    s.pk[3] = s.pk[2]; s.pk[2] = s.pk[1]; s.pk[1] = s.pk[0];\n    if (s.run && s.buffer >= 1) { s.buffer -= 1; s.pk[0] = newBottle(); } else s.pk[0] = null;\n}\n\n// =====================================================================\n// 3) ESTADOS DE ESTACIÓN Y DE LÍNEA\n// =====================================================================\nconst transferring = s.phase < P.TRANSFER && s.v > 0;\nconst idle = !s.run && s.v === 0;\nfunction st(b, busyName, done, extraBlocked) {\n    if (extraBlocked) return 'BLOQUEADA';\n    if (!b) return idle ? 'PARADA' : 'ESPERA';\n    if (transferring) return 'TRANSFERENCIA';\n    if (!done) return busyName;\n    return idle ? 'PARADA' : 'LISTA';\n}\nconst b1 = s.pk[1], b2 = s.pk[2], b3 = s.pk[3], b4 = s.pk[4];\nconst capWaiting = !!(b2 && !b2.capped && !b2.capOn && s.caps < 1);\nconst stations = {\n    infeed:     { name: 'Alimentación', state: s.buffer < 1 ? (s.run ? 'SIN_ENVASES' : 'VACIA') : (idle ? 'PARADA' : 'OK'), fault: s.faults.bottles ? 'SIN_SUMINISTRO' : (s.gapLeft > 0 ? 'MICROPARADA' : null), buffer: Math.floor(s.buffer) },\n    filler:     { name: 'Llenadora', state: st(b1, 'LLENANDO', b1 && b1.fillDone, false), fault: s.faults.fill ? 'BOQUILLA_OBSTRUIDA' : null, flow: r2(s.Q) },\n    capper:     { name: 'Tapadora', state: capWaiting ? 'BLOQUEADA' : st(b2, b2 && b2.capOn ? 'TAPANDO' : 'ESPERA_TAPA', b2 && b2.capped, false), fault: s.faults.caps ? 'SIN_TAPAS' : null, caps: Math.floor(s.caps) },\n    labeler:    { name: 'Etiquetadora', state: st(b3, 'ETIQUETANDO', b3 && b3.labeled, s.faults.jam), fault: s.faults.jam ? 'ATASCO' : null },\n    inspection: { name: 'Inspección', state: b4 ? (b4.reject ? 'RECHAZO' : 'OK') : (idle ? 'PARADA' : 'ESPERA'), fault: null }\n};\nconst anyBlocked = stations.capper.state === 'BLOQUEADA' || stations.labeler.state === 'BLOQUEADA';\nlet lineState;\nif (!s.run) lineState = s.v > 0.05 ? 'DETENIENDO' : 'PARADA';\nelse if (s.holding || anyBlocked) lineState = 'BLOQUEADA';\nelse if (s.buffer < 1) lineState = 'SIN_ENVASES';\nelse if (s.v < s.sp - 0.5) lineState = 'ACELERANDO';\nelse if (s.v > s.sp + 0.5) lineState = 'DESACELERANDO';\nelse lineState = 'PRODUCIENDO';\n\ncontext.set('s', s);\nnode.status({ fill: lineState === 'PRODUCIENDO' ? 'green' : (lineState === 'PARADA' ? 'grey' : 'yellow'), shape: 'dot',\n              text: lineState + ' · ' + r2(s.v) + ' env/min · ' + s.cnt.total + ' env' });\n\n// =====================================================================\n// 4) INSTANTÁNEA HACIA LÓGICA DE CONTROL / COMUNICACIONES\n// =====================================================================\nconst pockets = s.pk.map(b => b ? { id: b.id, fill: r2(b.fill), filling: !b.fillDone && b === b1, capped: b.capped, labeled: b.labeled, reject: b.reject, cause: b.cause } : null);\nreturn [{ topic: 'snapshot', payload: {\n    simT: r2(s.simT), ts: new Date(now).toISOString(), startedAt: s.startedAt,\n    line: { state: lineState, run: s.run, speedSetpoint: s.sp, speed: r2(s.v), phase: Math.round(s.phase * 1000) / 1000, holding: s.holding },\n    fill: { level: b1 ? r2(b1.fill) : 0, last: s.lastFill === null ? null : r2(s.lastFill), flow: r2(s.Q), lastTime: s.lastFillTime === null ? null : r2(s.lastFillTime), target: P.TARGET, tol: P.TOL },\n    counts: { total: s.cnt.total, good: s.cnt.good, rejected: s.cnt.rej, byCause: Object.assign({}, s.cnt.cause) },\n    buffer: Math.floor(s.buffer), caps: Math.floor(s.caps),\n    stations: stations,\n    blocked: { capper: r2(s.blk.capper), labeler: r2(s.blk.labeler) }, starvedFor: r2(s.starvedFor),\n    times: { planned: r2(s.tm.planned), up: r2(s.tm.up), blocked: r2(s.tm.blocked), starved: r2(s.tm.starved) },\n    faults: Object.assign({}, s.faults),\n    pockets: pockets,\n    events: s.events,\n    params: P\n} }, null];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 150,
+        "wires": [
+            [
+                "9164ca82447d66a1",
+                "0b4f526a82b67166"
+            ],
+            [
+                "4da0039f3a3db784"
+            ]
+        ]
+    },
+    {
+        "id": "9164ca82447d66a1",
+        "type": "link out",
+        "z": "8da2f8cc0782f23d",
+        "name": "instantánea →",
+        "mode": "link",
+        "links": [
+            "4d6ae9978dd0a42d",
+            "f62eb99b7457863d"
+        ],
+        "x": 625,
+        "y": 130,
+        "wires": []
+    },
+    {
+        "id": "4da0039f3a3db784",
+        "type": "link out",
+        "z": "8da2f8cc0782f23d",
+        "name": "resultado cmd →",
+        "mode": "link",
+        "links": [
+            "cd78b29e872a5eea"
+        ],
+        "x": 625,
+        "y": 170,
+        "wires": []
+    },
+    {
+        "id": "0b4f526a82b67166",
+        "type": "debug",
+        "z": "8da2f8cc0782f23d",
+        "name": "ver instantánea",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 640,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "c5702640cb9670c6",
+        "type": "comment",
+        "z": "641b3fb3abbb457e",
+        "name": "Validación de comandos · KPI · Alarmas",
+        "info": "Cadena de telemetría: instantánea → KPI → Alarmas → comunicaciones.\nCadena de comandos: MQTT commands → Validador (dedup, rango, enclavamientos) → modelo o motor de alarmas.\nLos rechazos y duplicados se confirman directamente en /ack.",
+        "x": 200,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "4d6ae9978dd0a42d",
+        "type": "link in",
+        "z": "641b3fb3abbb457e",
+        "name": "← instantánea",
+        "links": [
+            "9164ca82447d66a1"
+        ],
+        "x": 135,
+        "y": 120,
+        "wires": [
+            [
+                "48b128cf24892b86"
+            ]
+        ]
+    },
+    {
+        "id": "48b128cf24892b86",
+        "type": "function",
+        "z": "641b3fb3abbb457e",
+        "name": "Cálculo de KPI",
+        "func": "// =====================================================================\n// A07 · CÁLCULO DE KPI\n// Entrada: instantánea del modelo (cada 0,5 s)\n// Salida: misma instantánea + objeto kpi\n// Ventana móvil: diferencia entre contadores acumulados ahora y hace W s.\n// =====================================================================\nconst W = 60;              // s   ventana móvil\nconst NOMINAL = 24;        // envases/min\nconst T_IDEAL = 60 / NOMINAL; // s  tiempo de ciclo ideal = 2,5 s\nconst r1 = x => (x === null || !isFinite(x)) ? null : Math.round(x * 10) / 10;\nconst r2 = x => (x === null || !isFinite(x)) ? null : Math.round(x * 100) / 100;\n\nconst snap = msg.payload;\nconst t = snap.simT;\nlet ring = context.get('ring') || [];\nlet exits = context.get('exits') || [];\nlet lastTotal = context.get('lastTotal');\n\n// Si se reiniciaron los contadores, se reinician las ventanas\nif (lastTotal !== undefined && snap.counts.total < lastTotal) { ring = []; exits = []; }\ncontext.set('lastTotal', snap.counts.total);\n\nring.push({ t: t, planned: snap.times.planned, up: snap.times.up, total: snap.counts.total, good: snap.counts.good, rej: snap.counts.rejected });\nwhile (ring.length > 2 && t - ring[1].t >= W) ring.shift();\nconst a = ring[0], b = ring[ring.length - 1];\nconst span = Math.max(b.t - a.t, 0.001);\n\nfor (const e of snap.events) if (e.type === 'exit') exits.push(e.t);\nwhile (exits.length > 11) exits.shift();\n\n// ---- KPI en ventana móvil ----\nconst dGood = b.good - a.good, dTot = b.total - a.total, dRej = b.rej - a.rej;\nconst dPlanned = b.planned - a.planned, dUp = b.up - a.up;\nconst unitsPerMin = dGood / span * 60;                                 // u/min\nconst rejectPct = dTot > 0 ? dRej / dTot * 100 : 0;                    // %\nconst availability = dPlanned > 0.5 ? dUp / dPlanned * 100 : null;     // %\nconst performance = dUp > 0.5 ? Math.min(100, dTot * T_IDEAL / dUp * 100) : null; // %\nlet cycleTime = null;                                                  // s\nif (exits.length >= 2) cycleTime = (exits[exits.length - 1] - exits[0]) / (exits.length - 1);\nconst quality = dTot > 0 ? (dTot - dRej) / dTot * 100 : null;\nconst oee = (availability !== null && performance !== null && quality !== null) ? availability * performance * quality / 10000 : null;\n\n// ---- KPI acumulados desde el último reinicio ----\nconst c = snap.counts, tm = snap.times;\nconst cum = {\n    rejectPct: c.total > 0 ? r2(c.rejected / c.total * 100) : 0,\n    availability: tm.planned > 0.5 ? r1(tm.up / tm.planned * 100) : null,\n    performance: tm.up > 0.5 ? r1(Math.min(100, c.total * T_IDEAL / tm.up * 100)) : null,\n    unitsPerMin: tm.planned > 0.5 ? r1(c.good / tm.planned * 60) : 0\n};\n\nsnap.kpi = {\n    window_s: Math.round(span),\n    unitsPerMin: r1(unitsPerMin),\n    rejectPct: r2(rejectPct),\n    performance: r1(performance),\n    cycleTime: r2(cycleTime),\n    idealCycleTime: r2(snap.line.speedSetpoint > 0 ? 60 / snap.line.speedSetpoint : null),\n    availability: r1(availability),\n    quality: r1(quality),\n    oee: r1(oee),\n    cumulative: cum\n};\n\ncontext.set('ring', ring);\ncontext.set('exits', exits);\nnode.status({ fill: 'blue', shape: 'dot', text: 'u/min ' + snap.kpi.unitsPerMin + ' · rech ' + snap.kpi.rejectPct + '% · disp ' + snap.kpi.availability + '%' });\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "6775fe2c7cea2fda"
+            ]
+        ]
+    },
+    {
+        "id": "6775fe2c7cea2fda",
+        "type": "function",
+        "z": "641b3fb3abbb457e",
+        "name": "Motor de alarmas",
+        "func": "// =====================================================================\n// A07 · MOTOR DE ALARMAS (detección, severidad, reconocimiento)\n// Entradas:\n//   topic \"snapshot\" -> instantánea con KPI (evalúa condiciones)\n//   topic \"ackAlarm\" -> comando de reconocimiento validado\n// Salidas:\n//   1 -> instantánea (+ resumen de alarmas) hacia comunicaciones/telemetría\n//   2 -> eventos de alarma (RAISE / ACK / CLEAR) + lista de activas\n//   3 -> ACK del comando ackAlarm\n// Ciclo de vida (ISA-18.2 simplificado):\n//   NORMAL -> ACTIVA_NO_RECONOCIDA -> ACTIVA_RECONOCIDA -> NORMAL\n//                                  \\-> NORMALIZADA_NO_RECONOCIDA -> NORMAL\n// =====================================================================\nconst DEF = {\n    NIVEL_INCORRECTO:   { name: 'Nivel de llenado incorrecto', severity: 'MEDIA', priority: 2,\n                          condition: '≥ 2 envases consecutivos fuera de 95 ± 2 %', clearCond: '5 envases consecutivos dentro de tolerancia' },\n    ESTACION_BLOQUEADA: { name: 'Estación bloqueada', severity: 'ALTA', priority: 1,\n                          condition: 'tapadora o etiquetadora bloqueada ≥ 3 s', clearCond: 'ninguna estación bloqueada' },\n    FALTA_ENVASES:      { name: 'Falta de envases', severity: 'MEDIA', priority: 2,\n                          condition: 'mesa de alimentación vacía ≥ 4 s con la línea en marcha', clearCond: 'mesa con ≥ 5 envases' }\n};\nconst BAD_N = 2, GOOD_N = 5, BLOCK_S = 3, STARVE_S = 4, STARVE_CLEAR = 5;\n\nlet A = context.get('A');\nif (!A) {\n    A = {};\n    for (const k in DEF) A[k] = { code: k, state: 'NORMAL', active: false, acked: true, occurrence: 0, alarmId: null, raisedAt: null, ackAt: null, clearedAt: null, ackBy: null, value: null, message: '' };\n    context.set('A', A);\n    context.set('streak', { bad: 0, good: 0 });\n}\nconst nowIso = new Date().toISOString();\nconst events = [];\n\nfunction publicView(a) {\n    const d = DEF[a.code];\n    return { alarmId: a.alarmId, code: a.code, name: d.name, severity: d.severity, priority: d.priority,\n             state: a.state, active: a.active, acked: a.acked, condition: d.condition, value: a.value, message: a.message,\n             raisedAt: a.raisedAt, ackAt: a.ackAt, ackBy: a.ackBy, clearedAt: a.clearedAt };\n}\nfunction emit(a, ev) { events.push(Object.assign({ event: ev, eventTs: nowIso }, publicView(a))); }\nfunction setState(a) {\n    a.state = a.active ? (a.acked ? 'ACTIVA_RECONOCIDA' : 'ACTIVA_NO_RECONOCIDA') : (a.acked ? 'NORMAL' : 'NORMALIZADA_NO_RECONOCIDA');\n}\nfunction evaluate(code, condTrue, condClear, value, message) {\n    const a = A[code];\n    if (!a.active && condTrue) {\n        a.active = true; a.acked = false; a.occurrence++;\n        a.alarmId = 'A07-' + code + '-' + a.occurrence;\n        a.raisedAt = nowIso; a.ackAt = null; a.ackBy = null; a.clearedAt = null;\n        a.value = value; a.message = message; setState(a); emit(a, 'RAISE');\n    } else if (a.active && condClear) {\n        a.active = false; a.clearedAt = nowIso; a.value = value; setState(a); emit(a, 'CLEAR');\n    } else if (a.active) { a.value = value; }\n}\nfunction activeList() {\n    return Object.values(A).filter(a => a.state !== 'NORMAL').map(publicView).sort((x, y) => DEF[x.code].priority - DEF[y.code].priority);\n}\n\n// ---------------- Reconocimiento ----------------\nif (msg.topic === 'ackAlarm') {\n    const cmd = msg.payload;\n    const a = Object.values(A).find(x => x.alarmId === cmd.alarmId || x.code === cmd.alarmId);\n    let result = 'accepted', detail;\n    if (!a || a.alarmId === null) { result = 'rejected'; detail = 'Alarma no encontrada: ' + cmd.alarmId; }\n    else if (a.acked) { detail = 'La alarma ' + a.alarmId + ' ya estaba reconocida'; }\n    else {\n        a.acked = true; a.ackAt = nowIso; a.ackBy = cmd.source || cmd.user || 'operador'; setState(a); emit(a, 'ACK');\n        detail = 'Alarma ' + a.alarmId + ' reconocida → ' + a.state;\n    }\n    context.set('A', A);\n    return [null,\n            events.length ? { topic: 'alarms', payload: { events: events, active: activeList() } } : null,\n            { topic: 'cmdResult', payload: { cmdId: cmd.cmdId, action: 'ackAlarm', alarmId: cmd.alarmId, source: cmd.source, result: result, executed: result === 'accepted', detail: detail } }];\n}\n\n// ---------------- Evaluación de condiciones ----------------\nconst snap = msg.payload;\nconst streak = context.get('streak');\nfor (const e of snap.events) {\n    if (e.type !== 'inspect') continue;\n    if (e.fillOk) { streak.good++; streak.bad = 0; } else { streak.bad++; streak.good = 0; }\n    streak.lastFill = e.fill;\n}\ncontext.set('streak', streak);\n\nevaluate('NIVEL_INCORRECTO', streak.bad >= BAD_N, streak.good >= GOOD_N, streak.lastFill === undefined ? null : streak.lastFill,\n         'Último llenado ' + streak.lastFill + ' % (objetivo 95 ± 2 %)');\n\nconst bCap = snap.blocked.capper, bLab = snap.blocked.labeler;\nconst who = bLab >= BLOCK_S ? 'Etiquetadora (atasco)' : 'Tapadora (tolva sin tapas)';\nevaluate('ESTACION_BLOQUEADA', Math.max(bCap, bLab) >= BLOCK_S, bCap === 0 && bLab === 0, Math.max(bCap, bLab),\n         who + ' bloqueada ' + Math.round(Math.max(bCap, bLab)) + ' s');\n\nevaluate('FALTA_ENVASES', snap.line.run && snap.starvedFor >= STARVE_S, snap.buffer >= STARVE_CLEAR, snap.buffer,\n         'Mesa de alimentación con ' + snap.buffer + ' envases');\n\n// ---------------- Salidas ----------------\nconst act = activeList();\nsnap.alarms = { active: act.length, unacked: act.filter(a => !a.acked).length, highest: act.length ? act[0].severity : null };\ncontext.set('A', A);\nnode.status({ fill: act.length ? 'red' : 'green', shape: act.length ? 'ring' : 'dot', text: act.length ? act.length + ' alarma(s): ' + act.map(a => a.code).join(', ') : 'sin alarmas' });\nreturn [msg, events.length ? { topic: 'alarms', payload: { events: events, active: act } } : null, null];\n",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 160,
+        "wires": [
+            [
+                "4b8eee65202d4e16"
+            ],
+            [
+                "679e68172d9f78da"
+            ],
+            [
+                "c11218b175bf7df0"
+            ]
+        ]
+    },
+    {
+        "id": "4b8eee65202d4e16",
+        "type": "link out",
+        "z": "641b3fb3abbb457e",
+        "name": "telemetría →",
+        "mode": "link",
+        "links": [
+            "e588df8801993570"
+        ],
+        "x": 775,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "679e68172d9f78da",
+        "type": "link out",
+        "z": "641b3fb3abbb457e",
+        "name": "alarmas →",
+        "mode": "link",
+        "links": [
+            "b7e16366e768a2fc"
+        ],
+        "x": 775,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "c11218b175bf7df0",
+        "type": "link out",
+        "z": "641b3fb3abbb457e",
+        "name": "ack alarma →",
+        "mode": "link",
+        "links": [
+            "cd78b29e872a5eea"
+        ],
+        "x": 775,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "f62eb99b7457863d",
+        "type": "link in",
+        "z": "641b3fb3abbb457e",
+        "name": "← estado (enclavamientos)",
+        "links": [
+            "9164ca82447d66a1"
+        ],
+        "x": 135,
+        "y": 280,
+        "wires": [
+            [
+                "b7ba28dce1c6af9c"
+            ]
+        ]
+    },
+    {
+        "id": "b7ba28dce1c6af9c",
+        "type": "change",
+        "z": "641b3fb3abbb457e",
+        "name": "topic = state",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "state",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 320,
+        "y": 280,
+        "wires": [
+            [
+                "ca9ca5aef91a93b2"
+            ]
+        ]
+    },
+    {
+        "id": "47b9df02671cbbe5",
+        "type": "link in",
+        "z": "641b3fb3abbb457e",
+        "name": "← comando MQTT",
+        "links": [
+            "68e839716f186f69"
+        ],
+        "x": 135,
+        "y": 340,
+        "wires": [
+            [
+                "b85d98f6f2b90e60"
+            ]
+        ]
+    },
+    {
+        "id": "b85d98f6f2b90e60",
+        "type": "change",
+        "z": "641b3fb3abbb457e",
+        "name": "topic = command",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "command",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 330,
+        "y": 340,
+        "wires": [
+            [
+                "ca9ca5aef91a93b2"
+            ]
+        ]
+    },
+    {
+        "id": "ca9ca5aef91a93b2",
+        "type": "function",
+        "z": "641b3fb3abbb457e",
+        "name": "Validador de comandos y enclavamientos",
+        "func": "// =====================================================================\n// A07 · VALIDADOR DE COMANDOS Y ENCLAVAMIENTOS (lógica de control)\n// Entradas:\n//   msg.topic = \"state\"   -> última instantánea del modelo (para enclavamientos)\n//   msg.topic = \"command\" -> payload crudo recibido por MQTT (string)\n// Salidas:\n//   1 -> comando aceptado hacia el MODELO (topic \"cmd\")\n//   2 -> reconocimiento de alarma hacia el MOTOR DE ALARMAS (topic \"ackAlarm\")\n//   3 -> ACK de rechazo / duplicado directo a comunicaciones\n// =====================================================================\nconst SP_MIN = 6, SP_MAX = 30;\nconst DEDUP_WINDOW_MS = 10 * 60 * 1000;   // ventana de memoria de cmdId\nconst DEBOUNCE_MS = 1500;                 // anti doble-pulsación para comandos de texto\nconst MAX_AGE_MS = 60 * 1000;             // comandos más antiguos se consideran expirados\nconst FAULTS = ['caps', 'fill', 'bottles', 'jam'];\n\nif (msg.topic === 'state') { context.set('last', msg.payload); return null; }\n\nconst nowMs = Date.now();\nconst seen = context.get('seen') || {};        // cmdId -> instante de recepción\nconst recent = context.get('recent') || {};    // firma de comando de texto -> instante\nfor (const k in seen) if (nowMs - seen[k] > DEDUP_WINDOW_MS) delete seen[k];\nfor (const k in recent) if (nowMs - recent[k] > DEBOUNCE_MS) delete recent[k];\n\nfunction reject(cmd, reason, result) {\n    node.status({ fill: 'red', shape: 'ring', text: (result || 'rejected') + ': ' + reason });\n    return [null, null, { topic: 'cmdResult', payload: {\n        cmdId: cmd.cmdId || null, action: cmd.action || null, value: cmd.value, source: cmd.source || null,\n        result: result || 'rejected', executed: false, detail: reason } }];\n}\n\n// ---------- 1) Decodificación: JSON o texto simple (IoT MQTT Panel) ----------\nlet raw = msg.payload;\nif (Buffer.isBuffer(raw)) raw = raw.toString('utf8');\nlet cmd = null;\nif (typeof raw === 'object' && raw !== null) cmd = raw;\nelse {\n    const txt = String(raw).trim();\n    if (txt.startsWith('{')) {\n        try { cmd = JSON.parse(txt); } catch (e) { return reject({}, 'JSON inválido: ' + e.message); }\n    } else {\n        // Formatos de texto aceptados: START | STOP | SPEED:18 | ACK:<alarmId>\n        const m = txt.toUpperCase().match(/^(START|STOP|SPEED|ACK)(?::\\s*(.+))?$/);\n        if (!m) return reject({}, 'Formato no reconocido: \"' + txt.slice(0, 40) + '\"');\n        const map = { START: 'start', STOP: 'stop', SPEED: 'setSpeed', ACK: 'ackAlarm' };\n        cmd = { action: map[m[1]], source: 'texto' };\n        if (m[1] === 'SPEED') cmd.value = Number(m[2]);\n        if (m[1] === 'ACK') cmd.alarmId = txt.split(':').slice(1).join(':').trim();\n        const sig = cmd.action + '|' + (cmd.value || cmd.alarmId || '');\n        if (recent[sig]) { context.set('recent', recent); return reject(cmd, 'Repetición en menos de ' + DEBOUNCE_MS + ' ms (anti-rebote)', 'duplicate'); }\n        recent[sig] = nowMs;\n        cmd.cmdId = 'txt-' + nowMs.toString(36) + '-' + Math.floor(Math.random() * 1e4);\n    }\n}\ncontext.set('recent', recent);\n\n// ---------- 2) Identificación y prevención de duplicados ----------\nif (!cmd.cmdId || typeof cmd.cmdId !== 'string') return reject(cmd, 'Falta cmdId (identificador único del comando)');\nif (seen[cmd.cmdId]) return reject(cmd, 'cmdId ya procesado: no se ejecuta dos veces', 'duplicate');\nseen[cmd.cmdId] = nowMs;\ncontext.set('seen', seen);\n\nif (cmd.ts) {\n    const age = nowMs - Date.parse(cmd.ts);\n    if (!isNaN(age) && age > MAX_AGE_MS) return reject(cmd, 'Comando expirado (' + Math.round(age / 1000) + ' s de antigüedad)', 'expired');\n}\n\n// ---------- 3) Validación de acción y rango ----------\nconst last = context.get('last');\nswitch (cmd.action) {\n    case 'start':\n        if (last && last.faults && last.faults.jam)\n            return reject(cmd, 'Enclavamiento: etiquetadora atascada. Retire el atasco antes de arrancar');\n        break;\n    case 'stop':\n        break; // la parada siempre se acepta (seguridad)\n    case 'setSpeed': {\n        const v = Number(cmd.value);\n        if (!isFinite(v)) return reject(cmd, 'value debe ser numérico (envases/min)');\n        if (v < SP_MIN || v > SP_MAX) return reject(cmd, 'Consigna fuera de rango [' + SP_MIN + ', ' + SP_MAX + '] envases/min');\n        cmd.value = Math.round(v * 10) / 10;\n        break;\n    }\n    case 'fault':\n        if (FAULTS.indexOf(cmd.fault) < 0) return reject(cmd, 'fault debe ser uno de: ' + FAULTS.join(', '));\n        cmd.active = !!cmd.active;\n        break;\n    case 'resetCounters':\n        if (last && last.line && last.line.run) return reject(cmd, 'Enclavamiento: detenga la línea antes de reiniciar contadores');\n        break;\n    case 'ackAlarm':\n        if (!cmd.alarmId) return reject(cmd, 'Falta alarmId');\n        node.status({ fill: 'blue', shape: 'dot', text: 'ackAlarm ' + cmd.alarmId });\n        return [null, { topic: 'ackAlarm', payload: cmd }, null];\n    default:\n        return reject(cmd, 'Acción no soportada: ' + cmd.action);\n}\n\nnode.status({ fill: 'green', shape: 'dot', text: cmd.action + (cmd.value !== undefined ? ' ' + cmd.value : '') + ' (' + cmd.cmdId + ')' });\nreturn [{ topic: 'cmd', payload: cmd }, null, null];\n",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 320,
+        "wires": [
+            [
+                "f0144dc239b9d61b"
+            ],
+            [
+                "6775fe2c7cea2fda"
+            ],
+            [
+                "794df18b59773032"
+            ]
+        ]
+    },
+    {
+        "id": "f0144dc239b9d61b",
+        "type": "link out",
+        "z": "641b3fb3abbb457e",
+        "name": "cmd → modelo",
+        "mode": "link",
+        "links": [
+            "d2bd04fc4bf940d1"
+        ],
+        "x": 865,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "794df18b59773032",
+        "type": "link out",
+        "z": "641b3fb3abbb457e",
+        "name": "rechazo/duplicado →",
+        "mode": "link",
+        "links": [
+            "cd78b29e872a5eea"
+        ],
+        "x": 865,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "8933b2105288c005",
+        "type": "comment",
+        "z": "c3a9470f4d7a19e5",
+        "name": "Tópicos MQTT del simulador (QoS / retain justificados en el informe)",
+        "info": "telemetry: QoS 0, sin retain (2 Hz, el siguiente valor reemplaza al anterior)\nstatus: QoS 1, RETAIN (cliente nuevo conoce el estado actual) + LWT online:false\nalarms: QoS 1, sin retain (evento único)\nalarms/active: QoS 1, RETAIN (lista vigente)\nack: QoS 1, sin retain\ncommands: suscripción QoS 1; nunca se publica con retain.",
+        "x": 250,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "e588df8801993570",
+        "type": "link in",
+        "z": "c3a9470f4d7a19e5",
+        "name": "← telemetría",
+        "links": [
+            "4b8eee65202d4e16"
+        ],
+        "x": 135,
+        "y": 120,
+        "wires": [
+            [
+                "712c89bb5ce9453b"
+            ]
+        ]
+    },
+    {
+        "id": "712c89bb5ce9453b",
+        "type": "function",
+        "z": "c3a9470f4d7a19e5",
+        "name": "Empaquetar telemetría / estado",
+        "func": "// =====================================================================\n// A07 · EMPAQUETADO MQTT DE TELEMETRÍA Y ESTADO (lado simulador)\n// Salida 1 -> utm/iot/A07/telemetry  (QoS 0, sin retain, 2 Hz)\n// Salida 2 -> utm/iot/A07/status     (QoS 1, RETAIN, al cambiar o cada 5 s)\n// Cada mensaje lleva deviceId, ts ISO 8601, seq y unidades.\n// =====================================================================\nconst DEVICE = 'A07-SIM-01';\nconst STATUS_EVERY_MS = 5000;\nconst snap = msg.payload;\nconst seq = (context.get('seq') || 0) + 1; context.set('seq', seq);\n\nconst telemetry = {\n    deviceId: DEVICE, project: 'A07', type: 'telemetry', ts: snap.ts, seq: seq,\n    units: { lineSpeed: 'envases/min', speedSetpoint: 'envases/min', fillLevel: '%', lastFillLevel: '%', fillFlow: 'mL/s',\n             fillTime: 's', bottlesCounted: 'n', infeedBuffer: 'envases', capHopper: 'tapas', cycleTime: 's', unitsPerMin: 'u/min' },\n    data: {\n        lineState: snap.line.state, run: snap.line.run,\n        lineSpeed: snap.line.speed, speedSetpoint: snap.line.speedSetpoint, cyclePhase: snap.line.phase,\n        fillLevel: snap.fill.level, lastFillLevel: snap.fill.last, fillFlow: snap.fill.flow, fillTime: snap.fill.lastTime,\n        bottlesCounted: snap.counts.total, bottlesGood: snap.counts.good, bottlesRejected: snap.counts.rejected, rejectsByCause: snap.counts.byCause,\n        infeedBuffer: snap.buffer, capHopper: snap.caps,\n        stations: {\n            infeed: snap.stations.infeed.state, filler: snap.stations.filler.state, capper: snap.stations.capper.state,\n            labeler: snap.stations.labeler.state, inspection: snap.stations.inspection.state\n        },\n        pockets: snap.pockets,\n        times: snap.times\n    },\n    kpi: snap.kpi,\n    alarms: snap.alarms\n};\n\n// ---- Estado: se publica si cambia algo relevante o como latido cada 5 s ----\nconst sig = JSON.stringify([snap.line.state, snap.line.run, snap.line.speedSetpoint, snap.faults,\n    Object.values(snap.stations).map(x => x.state + '/' + x.fault), snap.alarms.active, snap.alarms.unacked]);\nconst lastSig = context.get('lastSig'), lastAt = context.get('lastAt') || 0;\nlet status = null;\nif (sig !== lastSig || Date.now() - lastAt >= STATUS_EVERY_MS) {\n    const sseq = (context.get('sseq') || 0) + 1; context.set('sseq', sseq);\n    status = { topic: 'status', payload: {\n        deviceId: DEVICE, project: 'A07', type: 'status', ts: snap.ts, seq: sseq, online: true,\n        startedAt: snap.startedAt, uptime_s: Math.round(snap.simT),\n        lineState: snap.line.state, run: snap.line.run, speedSetpoint: snap.line.speedSetpoint,\n        stations: snap.stations, faults: snap.faults, alarms: snap.alarms,\n        params: snap.params\n    } };\n    context.set('lastSig', sig); context.set('lastAt', Date.now());\n}\nreturn [{ topic: 'telemetry', payload: telemetry }, status];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 120,
+        "wires": [
+            [
+                "e34cdc33b4c8200f"
+            ],
+            [
+                "23d3449c3aa4cce3"
+            ]
+        ]
+    },
+    {
+        "id": "e34cdc33b4c8200f",
+        "type": "mqtt out",
+        "z": "c3a9470f4d7a19e5",
+        "name": "telemetry (QoS0)",
+        "topic": "utm/iot/A07/telemetry",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "96925e11e9f380d5",
+        "x": 640,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "23d3449c3aa4cce3",
+        "type": "mqtt out",
+        "z": "c3a9470f4d7a19e5",
+        "name": "status (QoS1, retain)",
+        "topic": "utm/iot/A07/status",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "96925e11e9f380d5",
+        "x": 650,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "b7e16366e768a2fc",
+        "type": "link in",
+        "z": "c3a9470f4d7a19e5",
+        "name": "← alarmas",
+        "links": [
+            "679e68172d9f78da"
+        ],
+        "x": 135,
+        "y": 220,
+        "wires": [
+            [
+                "23e9bb22270bd636"
+            ]
+        ]
+    },
+    {
+        "id": "23e9bb22270bd636",
+        "type": "function",
+        "z": "c3a9470f4d7a19e5",
+        "name": "Empaquetar alarmas",
+        "func": "// =====================================================================\n// A07 · EMPAQUETADO MQTT DE ALARMAS\n// Salida 1 -> utm/iot/A07/alarms         (QoS 1, sin retain: cada evento una vez)\n// Salida 2 -> utm/iot/A07/alarms/active  (QoS 1, RETAIN: lista vigente para\n//             clientes que se conectan o reconectan tarde)\n// =====================================================================\nconst DEVICE = 'A07-SIM-01';\nconst out1 = msg.payload.events.map(e => {\n    const seq = (context.get('seq') || 0) + 1; context.set('seq', seq);\n    return { topic: 'alarm', payload: Object.assign({ deviceId: DEVICE, project: 'A07', type: 'alarm', ts: e.eventTs, seq: seq }, e) };\n});\nconst active = { topic: 'active', payload: { deviceId: DEVICE, project: 'A07', type: 'alarms_active', ts: new Date().toISOString(), count: msg.payload.active.length, alarms: msg.payload.active } };\nreturn [out1, active];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 220,
+        "wires": [
+            [
+                "2e9c4b2a492dd2a5"
+            ],
+            [
+                "b29ac7257c279416"
+            ]
+        ]
+    },
+    {
+        "id": "2e9c4b2a492dd2a5",
+        "type": "mqtt out",
+        "z": "c3a9470f4d7a19e5",
+        "name": "alarms (QoS1)",
+        "topic": "utm/iot/A07/alarms",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "96925e11e9f380d5",
+        "x": 630,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b29ac7257c279416",
+        "type": "mqtt out",
+        "z": "c3a9470f4d7a19e5",
+        "name": "alarms/active (QoS1, retain)",
+        "topic": "utm/iot/A07/alarms/active",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "96925e11e9f380d5",
+        "x": 670,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "cd78b29e872a5eea",
+        "type": "link in",
+        "z": "c3a9470f4d7a19e5",
+        "name": "← ack",
+        "links": [
+            "4da0039f3a3db784",
+            "c11218b175bf7df0",
+            "794df18b59773032"
+        ],
+        "x": 135,
+        "y": 320,
+        "wires": [
+            [
+                "e439d88385296521"
+            ]
+        ]
+    },
+    {
+        "id": "e439d88385296521",
+        "type": "function",
+        "z": "c3a9470f4d7a19e5",
+        "name": "Empaquetar ACK",
+        "func": "// =====================================================================\n// A07 · EMPAQUETADO MQTT DE RECONOCIMIENTOS DE COMANDO\n// Salida -> utm/iot/A07/ack (QoS 1, sin retain)\n// result: accepted | rejected | duplicate | expired\n// =====================================================================\nconst seq = (context.get('seq') || 0) + 1; context.set('seq', seq);\nconst r = msg.payload;\nmsg.payload = Object.assign({ deviceId: 'A07-SIM-01', project: 'A07', type: 'ack', ts: new Date().toISOString(), seq: seq }, r);\nnode.status({ fill: r.result === 'accepted' ? 'green' : 'red', shape: 'dot', text: r.result + ' · ' + (r.action || '?') + ' · ' + (r.cmdId || '') });\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 320,
+        "wires": [
+            [
+                "8a69f7731f12a7e9"
+            ]
+        ]
+    },
+    {
+        "id": "8a69f7731f12a7e9",
+        "type": "mqtt out",
+        "z": "c3a9470f4d7a19e5",
+        "name": "ack (QoS1)",
+        "topic": "utm/iot/A07/ack",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "96925e11e9f380d5",
+        "x": 610,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "2c43d4ce57ceb10e",
+        "type": "mqtt in",
+        "z": "c3a9470f4d7a19e5",
+        "name": "commands (QoS1)",
+        "topic": "utm/iot/A07/commands",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "96925e11e9f380d5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 420,
+        "wires": [
+            [
+                "68e839716f186f69",
+                "55d166fd289c8664"
+            ]
+        ]
+    },
+    {
+        "id": "68e839716f186f69",
+        "type": "link out",
+        "z": "c3a9470f4d7a19e5",
+        "name": "comando →",
+        "mode": "link",
+        "links": [
+            "47b9df02671cbbe5"
+        ],
+        "x": 395,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "55d166fd289c8664",
+        "type": "debug",
+        "z": "c3a9470f4d7a19e5",
+        "name": "comandos recibidos",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 470,
+        "wires": []
+    },
+    {
+        "id": "7dc5aa99f546c71f",
+        "type": "comment",
+        "z": "b41c932809e81bee",
+        "name": "Dashboard propio: http://localhost:1880/a07",
+        "info": "Esta pestaña NO lee variables del simulador: solo recibe lo publicado en el broker (cliente MQTT utm-a07-dash-g8).\nNavegador ↔ Node-RED por WebSocket /ws/a07.\nPersistencia: carpeta A07_DATA_DIR o ~/.node-red/a07-data (alarmas.jsonl, historico-AAAA-MM-DD.csv, eventos.jsonl).",
+        "x": 200,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "791b1f22104e184c",
+        "type": "http in",
+        "z": "b41c932809e81bee",
+        "name": "GET /a07",
+        "url": "/a07",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "9e3696174989dbc4"
+            ]
+        ]
+    },
+    {
+        "id": "9e3696174989dbc4",
+        "type": "template",
+        "z": "b41c932809e81bee",
+        "name": "index.html",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "html",
+        "syntax": "plain",
+        "template": "<!doctype html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>A07 · Línea de embotellado</title>\n<link rel=\"stylesheet\" href=\"/a07/app.css\">\n</head>\n<body>\n<header class=\"topbar\">\n  <div class=\"brand\">\n    <span class=\"tag\">A07</span>\n    <div>\n      <div class=\"title\">Línea de embotellado automatizada</div>\n      <div class=\"subtitle\">Gemelo digital · UTM · IoT Paralelo A · Grupo 8</div>\n    </div>\n  </div>\n  <nav class=\"views\" role=\"tablist\">\n    <button class=\"view-btn active\" data-view=\"op\" role=\"tab\">Operación</button>\n    <button class=\"view-btn\" data-view=\"eng\" role=\"tab\">Ingeniería</button>\n  </nav>\n  <div class=\"conn\">\n    <span class=\"pill\" id=\"pill-ws\" title=\"WebSocket navegador ↔ Node-RED\"><i></i>Dashboard</span>\n    <span class=\"pill\" id=\"pill-sim\" title=\"Estado del simulador recibido por MQTT (status retained / LWT)\"><i></i>Simulador</span>\n    <span class=\"pill\" id=\"pill-data\" title=\"Antigüedad de la última telemetría\"><i></i>Telemetría</span>\n    <span class=\"clock\" id=\"clock\">--:--:--</span>\n  </div>\n</header>\n\n<main>\n<!-- =================================================== OPERACIÓN -->\n<section id=\"view-op\" class=\"view active\">\n  <div class=\"op-head\">\n    <div class=\"state-box\" id=\"line-state-box\">\n      <div class=\"lbl\">Estado de la línea</div>\n      <div class=\"state\" id=\"line-state\">SIN DATOS</div>\n      <div class=\"state-sub\" id=\"line-state-sub\">Esperando telemetría…</div>\n    </div>\n    <div class=\"controls panel\">\n      <div class=\"lbl\">Mando de la línea</div>\n      <div class=\"ctl-row\">\n        <button class=\"btn btn-start\" id=\"btn-start\">▶ Iniciar línea</button>\n        <button class=\"btn btn-stop\" id=\"btn-stop\">■ Detener línea</button>\n      </div>\n      <div class=\"ctl-row speed\">\n        <label for=\"sp-range\">Consigna</label>\n        <input type=\"range\" id=\"sp-range\" min=\"6\" max=\"30\" step=\"1\" value=\"24\">\n        <input type=\"number\" id=\"sp-num\" min=\"6\" max=\"30\" step=\"1\" value=\"24\">\n        <span class=\"unit\">env/min</span>\n        <button class=\"btn\" id=\"btn-speed\">Aplicar velocidad</button>\n      </div>\n      <div class=\"ack-line\" id=\"ack-line\">Sin comandos enviados.</div>\n    </div>\n  </div>\n\n  <div class=\"panel mimic-wrap\">\n    <svg id=\"mimic\" viewBox=\"0 0 1200 380\" preserveAspectRatio=\"xMidYMid meet\" aria-label=\"Animación de la línea de embotellado\"></svg>\n  </div>\n\n  <div class=\"vars\">\n    <div class=\"var\"><div class=\"lbl\">Velocidad de línea</div><div class=\"val\"><span id=\"v-speed\">–</span><small>env/min</small></div><div class=\"bar\"><b id=\"v-speed-bar\"></b><em id=\"v-sp-mark\"></em></div><div class=\"hint\" id=\"v-speed-sp\">consigna –</div></div>\n    <div class=\"var\"><div class=\"lbl\">Nivel de llenado (último envase)</div><div class=\"val\"><span id=\"v-fill\">–</span><small>%</small></div><div class=\"bar fillbar\"><i class=\"tol\"></i><b id=\"v-fill-bar\"></b></div><div class=\"hint\" id=\"v-fill-sub\">objetivo 95 ± 2 %</div></div>\n    <div class=\"var\"><div class=\"lbl\">Envases contados</div><div class=\"val\"><span id=\"v-count\">–</span><small>n</small></div><div class=\"hint\" id=\"v-count-sub\">buenos – · rechazados –</div></div>\n    <div class=\"var\"><div class=\"lbl\">Insumos</div><div class=\"val small\"><span id=\"v-buffer\">–</span><small>envases en mesa</small></div><div class=\"val small\"><span id=\"v-caps\">–</span><small>tapas en tolva</small></div></div>\n  </div>\n\n  <div class=\"kpis\" id=\"kpis\"></div>\n\n  <div class=\"panel\">\n    <div class=\"panel-head\"><h2>Alarmas activas</h2><span class=\"muted\" id=\"alarm-count\">0</span></div>\n    <table class=\"tbl\" id=\"tbl-active\">\n      <thead><tr><th>Severidad</th><th>Alarma</th><th>Estado</th><th>Detalle</th><th>Hora</th><th></th></tr></thead>\n      <tbody></tbody>\n    </table>\n  </div>\n</section>\n\n<!-- =================================================== INGENIERÍA -->\n<section id=\"view-eng\" class=\"view\">\n  <div class=\"panel\">\n    <div class=\"panel-head\">\n      <h2>Históricos</h2>\n      <div class=\"seg\" id=\"win-seg\">\n        <span class=\"muted\">Ventana:</span>\n        <button data-w=\"60\">1 min</button><button data-w=\"300\" class=\"active\">5 min</button><button data-w=\"900\">15 min</button><button data-w=\"1800\">30 min</button><button data-w=\"3600\">60 min</button>\n      </div>\n    </div>\n    <div class=\"charts\">\n      <div class=\"chart\"><div class=\"chart-title\">Velocidad de línea real vs consigna <span class=\"muted\">[env/min]</span></div><canvas id=\"ch-speed\"></canvas></div>\n      <div class=\"chart\"><div class=\"chart-title\">Nivel de llenado por envase <span class=\"muted\">[%] · banda 93–97 %</span></div><canvas id=\"ch-fill\"></canvas></div>\n      <div class=\"chart\"><div class=\"chart-title\">Producción y rechazos <span class=\"muted\">[u/min] · [%]</span></div><canvas id=\"ch-prod\"></canvas></div>\n    </div>\n  </div>\n\n  <div class=\"eng-grid\">\n    <div class=\"panel\">\n      <div class=\"panel-head\"><h2>Estado de estaciones</h2></div>\n      <table class=\"tbl\" id=\"tbl-stations\"><thead><tr><th>Estación</th><th>Estado</th><th>Falla</th><th>Dato</th></tr></thead><tbody></tbody></table>\n    </div>\n    <div class=\"panel\">\n      <div class=\"panel-head\"><h2>Inyección de perturbaciones y fallas</h2></div>\n      <p class=\"muted small\">Cada botón publica un comando <code>fault</code> en <code>utm/iot/A07/commands</code>; el simulador responde en <code>/ack</code>.</p>\n      <div class=\"faults\" id=\"faults\"></div>\n      <div class=\"ctl-row\"><button class=\"btn\" id=\"btn-reset\">Reiniciar contadores</button><span class=\"muted small\">Requiere línea detenida (enclavamiento).</span></div>\n    </div>\n    <div class=\"panel\">\n      <div class=\"panel-head\"><h2>KPI: ventana móvil vs acumulado</h2></div>\n      <table class=\"tbl\" id=\"tbl-kpi\"><thead><tr><th>KPI</th><th>Ventana 60 s</th><th>Acumulado</th><th>Unidad</th></tr></thead><tbody></tbody></table>\n    </div>\n    <div class=\"panel\">\n      <div class=\"panel-head\"><h2>Comunicación MQTT</h2></div>\n      <dl class=\"kv\" id=\"comms\"></dl>\n    </div>\n  </div>\n\n  <div class=\"panel\">\n    <div class=\"panel-head\"><h2>Variables del modelo</h2><span class=\"muted small\" id=\"raw-ts\"></span></div>\n    <dl class=\"kv cols\" id=\"raw\"></dl>\n  </div>\n\n  <div class=\"panel\">\n    <div class=\"panel-head\"><h2>Registro de alarmas</h2><button class=\"btn small\" id=\"btn-csv-alarms\">Exportar CSV</button></div>\n    <div class=\"scroll\"><table class=\"tbl\" id=\"tbl-alog\"><thead><tr><th>Hora evento</th><th>Evento</th><th>Alarma</th><th>Severidad</th><th>Estado</th><th>Detalle</th><th>Reconocida por</th></tr></thead><tbody></tbody></table></div>\n  </div>\n\n  <div class=\"eng-grid two\">\n    <div class=\"panel\">\n      <div class=\"panel-head\"><h2>Comandos y ACK</h2></div>\n      <div class=\"scroll short\"><table class=\"tbl\" id=\"tbl-ack\"><thead><tr><th>Hora</th><th>cmdId</th><th>Acción</th><th>Resultado</th><th>Detalle</th></tr></thead><tbody></tbody></table></div>\n    </div>\n    <div class=\"panel\">\n      <div class=\"panel-head\"><h2>Parámetros del modelo</h2><span class=\"muted small\">publicados en /status</span></div>\n      <dl class=\"kv cols\" id=\"params\"></dl>\n    </div>\n  </div>\n</section>\n</main>\n\n<div class=\"toast\" id=\"toast\"></div>\n<script src=\"/a07/app.js\"></script>\n</body>\n</html>\n",
+        "output": "str",
+        "x": 380,
+        "y": 100,
+        "wires": [
+            [
+                "8eaa8ba763566090"
+            ]
+        ]
+    },
+    {
+        "id": "8eaa8ba763566090",
+        "type": "http response",
+        "z": "b41c932809e81bee",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-cache"
+        },
+        "x": 570,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "78c6ffe448a89514",
+        "type": "http in",
+        "z": "b41c932809e81bee",
+        "name": "GET /a07/app.css",
+        "url": "/a07/app.css",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "155af44f2edbe5be"
+            ]
+        ]
+    },
+    {
+        "id": "155af44f2edbe5be",
+        "type": "template",
+        "z": "b41c932809e81bee",
+        "name": "app.css",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "css",
+        "syntax": "plain",
+        "template": "/* =====================================================================\n   A07 · Dashboard HMI — estilo ISA-101 (alto desempeño):\n   fondo gris neutro, el color se reserva para estados anormales.\n   ===================================================================== */\n:root {\n  --bg: #d9dde1;\n  --panel: #eceef0;\n  --panel-2: #e2e5e8;\n  --line: #b4bcc4;\n  --ink: #1b2229;\n  --ink-2: #4a5560;\n  --muted: #6d7883;\n  --steel: #8b96a1;\n  --steel-d: #5f6b77;\n  --work: #2f6fb3;      /* actividad normal (azul discreto) */\n  --ok: #2e7d4f;\n  --med: #d9930d;       /* severidad MEDIA */\n  --high: #c62f2a;      /* severidad ALTA */\n  --liquid: #c9772b;    /* producto (bebida ámbar) */\n  --glass: #f6f8f9;\n  --radius: 6px;\n  --mono: ui-monospace, \"SF Mono\", Consolas, \"Roboto Mono\", monospace;\n  --sans: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n}\n* { box-sizing: border-box; }\nhtml, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 var(--sans); }\nbody { min-height: 100vh; }\nbutton { font: inherit; }\ncode { font-family: var(--mono); font-size: 12px; background: var(--panel-2); padding: 1px 4px; border-radius: 3px; }\n.muted { color: var(--muted); }\n.small { font-size: 12px; }\n\n/* ---------- Barra superior ---------- */\n.topbar {\n  position: sticky; top: 0; z-index: 10;\n  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;\n  padding: 10px 16px; background: #2b333b; color: #e8ecef;\n}\n.brand { display: flex; align-items: center; gap: 12px; flex: 1 1 280px; }\n.tag { font: 700 18px var(--mono); background: #e8ecef; color: #2b333b; padding: 4px 8px; border-radius: 4px; }\n.title { font-weight: 600; font-size: 16px; }\n.subtitle { font-size: 12px; color: #aab4be; }\n.views { display: flex; gap: 4px; background: #1f262c; padding: 3px; border-radius: 6px; }\n.view-btn { border: 0; background: transparent; color: #c4ccd3; padding: 6px 16px; border-radius: 4px; cursor: pointer; }\n.view-btn.active { background: #e8ecef; color: #1b2229; font-weight: 600; }\n.conn { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }\n.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 8px; border: 1px solid #4a555f; border-radius: 99px; color: #c4ccd3; }\n.pill i { width: 8px; height: 8px; border-radius: 50%; background: #6d7883; }\n.pill.ok i { background: #5cc286; }\n.pill.warn i { background: var(--med); }\n.pill.bad i { background: #ff5b55; }\n.pill.bad { border-color: #ff5b55; color: #ffd0ce; }\n.clock { font: 13px var(--mono); color: #c4ccd3; min-width: 64px; text-align: right; }\n\nmain { padding: 16px; max-width: 1500px; margin: 0 auto; }\n.view { display: none; }\n.view.active { display: block; }\n\n/* ---------- Paneles ---------- */\n.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; }\n.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }\n.panel-head h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin: 0; color: var(--ink-2); }\n.lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }\n\n/* ---------- Cabecera de operación ---------- */\n.op-head { display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 14px; margin-bottom: 14px; }\n.state-box { background: var(--panel); border: 1px solid var(--line); border-left: 8px solid var(--steel); border-radius: var(--radius); padding: 12px 16px; }\n.state { font: 700 28px var(--sans); letter-spacing: .02em; margin: 2px 0; }\n.state-sub { color: var(--ink-2); font-size: 13px; }\n.state-box.s-run { border-left-color: var(--ok); }\n.state-box.s-trans { border-left-color: var(--work); }\n.state-box.s-med { border-left-color: var(--med); background: #f3ead6; }\n.state-box.s-high { border-left-color: var(--high); background: #f5dcda; }\n.state-box.s-high .state { color: var(--high); }\n.controls { margin-bottom: 0; }\n.ctl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }\n.ctl-row.speed label { font-size: 13px; color: var(--ink-2); }\n.ctl-row input[type=range] { flex: 1 1 160px; accent-color: var(--steel-d); }\n.ctl-row input[type=number] { width: 64px; padding: 6px; border: 1px solid var(--line); border-radius: 4px; font: 14px var(--mono); }\n.unit { color: var(--muted); font-size: 12px; }\n.btn { border: 1px solid #8f99a3; background: linear-gradient(#f7f8f9, #dde1e5); color: var(--ink); padding: 7px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; }\n.btn:hover { background: linear-gradient(#ffffff, #e5e8eb); }\n.btn:active { background: #cfd4d9; }\n.btn:disabled { opacity: .5; cursor: not-allowed; }\n.btn.small { padding: 4px 10px; font-size: 12px; }\n.btn-start { border-color: #4a7d5d; }\n.btn-stop { border-color: #9b4a47; }\n.btn.on { background: var(--med); border-color: #a06d07; color: #1b2229; }\n.ack-line { margin-top: 10px; font: 12px var(--mono); color: var(--ink-2); min-height: 18px; padding: 6px 8px; background: var(--panel-2); border-radius: 4px; }\n.ack-line.ok { color: var(--ok); }\n.ack-line.bad { color: var(--high); background: #f5dcda; }\n.ack-line.wait { color: var(--work); }\n\n/* ---------- Mímico SVG ---------- */\n.mimic-wrap { padding: 6px; }\n#mimic { width: 100%; height: auto; display: block; }\n#mimic text { font-family: var(--sans); }\n#mimic .st-name { font-size: 13px; font-weight: 600; fill: var(--ink-2); text-anchor: middle; }\n#mimic .st-state { font: 600 11px var(--mono); text-anchor: middle; }\n#mimic .val { font: 12px var(--mono); fill: var(--ink-2); }\n\n/* ---------- Variables principales ---------- */\n.vars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }\n.var { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }\n.var .val { font: 600 30px var(--mono); font-variant-numeric: tabular-nums; }\n.var .val small { font: 12px var(--sans); color: var(--muted); margin-left: 6px; }\n.var .val.small { font-size: 20px; }\n.var .hint { font-size: 12px; color: var(--muted); }\n.bar { position: relative; height: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; margin: 6px 0 4px; overflow: hidden; }\n.bar b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--steel-d); width: 0; transition: width .4s; }\n.bar em { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); left: 0; }\n.fillbar .tol { position: absolute; left: 93%; width: 4%; top: 0; bottom: 0; background: rgba(46,125,79,.25); }\n.fillbar b { background: var(--liquid); }\n\n/* ---------- KPI ---------- */\n.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 14px; }\n.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; border-top: 4px solid var(--steel); }\n.kpi .v { font: 600 24px var(--mono); font-variant-numeric: tabular-nums; }\n.kpi .v small { font: 12px var(--sans); color: var(--muted); margin-left: 4px; }\n.kpi .f { font-size: 11px; color: var(--muted); margin-top: 2px; }\n.kpi.warn { border-top-color: var(--med); }\n.kpi.bad { border-top-color: var(--high); }\n\n/* ---------- Tablas ---------- */\n.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }\n.tbl th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--line); padding: 6px 8px; position: sticky; top: 0; background: var(--panel); }\n.tbl td { border-bottom: 1px solid var(--panel-2); padding: 6px 8px; vertical-align: middle; }\n.tbl td.mono { font-family: var(--mono); font-size: 12px; }\n.tbl tr.empty td { color: var(--muted); font-style: italic; }\n.scroll { max-height: 320px; overflow: auto; }\n.scroll.short { max-height: 240px; }\n.sev { display: inline-block; font: 700 11px var(--mono); padding: 2px 7px; border-radius: 3px; color: #fff; }\n.sev.ALTA { background: var(--high); }\n.sev.MEDIA { background: var(--med); color: #1b2229; }\n.chip { display: inline-block; font: 600 11px var(--mono); padding: 2px 6px; border-radius: 3px; background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line); }\n.chip.work { color: var(--work); border-color: #9db8d6; }\n.chip.bad { background: var(--high); color: #fff; border-color: var(--high); }\n.chip.warn { background: var(--med); color: #1b2229; border-color: var(--med); }\n.chip.ok { color: var(--ok); }\ntr.unack td:first-child { box-shadow: inset 4px 0 0 var(--high); }\ntr.blink td { animation: blink 1s steps(2) infinite; }\n@keyframes blink { 50% { background: #f5dcda; } }\n\n/* ---------- Ingeniería ---------- */\n.seg { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }\n.seg button { border: 1px solid var(--line); background: var(--panel-2); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }\n.seg button.active { background: #2b333b; color: #fff; border-color: #2b333b; }\n.charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }\n.chart { background: #f5f6f7; border: 1px solid var(--line); border-radius: 4px; padding: 8px; }\n.chart-title { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; }\n.chart canvas { width: 100%; height: 200px; display: block; }\n.eng-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }\n.eng-grid > .panel { margin-bottom: 0; }\n.eng-grid { margin-bottom: 14px; }\n.faults { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 8px 0; }\n.faults .btn { text-align: left; font-weight: 500; }\n.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; font-size: 13px; }\n.kv.cols { grid-template-columns: repeat(4, max-content 1fr); }\n.kv dt { color: var(--muted); }\n.kv dd { margin: 0; font-family: var(--mono); font-size: 12px; }\n\n.toast { position: fixed; right: 16px; bottom: 16px; max-width: 420px; background: #2b333b; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; }\n.toast.show { opacity: 1; transform: none; }\n.toast.bad { background: var(--high); }\n\n/* ---------- Responsivo ---------- */\n@media (max-width: 1100px) {\n  .kpis { grid-template-columns: repeat(3, 1fr); }\n  .charts { grid-template-columns: 1fr; }\n  .kv.cols { grid-template-columns: repeat(2, max-content 1fr); }\n}\n@media (max-width: 760px) {\n  main { padding: 10px; }\n  .op-head, .eng-grid { grid-template-columns: 1fr; }\n  .vars { grid-template-columns: repeat(2, 1fr); }\n  .kpis { grid-template-columns: repeat(2, 1fr); }\n  .faults { grid-template-columns: 1fr; }\n  .kv.cols { grid-template-columns: max-content 1fr; }\n  .state { font-size: 22px; }\n  .tbl { font-size: 12px; }\n}\n",
+        "output": "str",
+        "x": 380,
+        "y": 140,
+        "wires": [
+            [
+                "4d946cf04a983008"
+            ]
+        ]
+    },
+    {
+        "id": "4d946cf04a983008",
+        "type": "http response",
+        "z": "b41c932809e81bee",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "content-type": "text/css; charset=utf-8",
+            "cache-control": "no-cache"
+        },
+        "x": 570,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "f20d356ec15e4a93",
+        "type": "http in",
+        "z": "b41c932809e81bee",
+        "name": "GET /a07/app.js",
+        "url": "/a07/app.js",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 180,
+        "wires": [
+            [
+                "33068ef7890d06fb"
+            ]
+        ]
+    },
+    {
+        "id": "33068ef7890d06fb",
+        "type": "template",
+        "z": "b41c932809e81bee",
+        "name": "app.js",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "javascript",
+        "syntax": "plain",
+        "template": "/* =====================================================================\n   A07 · Dashboard propio (HTML/CSS/JS sin librerías externas)\n   El navegador NO accede al simulador: recibe por WebSocket lo que la\n   pestaña \"Presentación\" de Node-RED obtiene del broker MQTT, y envía\n   comandos que esa pestaña publica en utm/iot/A07/commands.\n   ===================================================================== */\n(function () {\n  'use strict';\n\n  // ------------------------------------------------------------------\n  // Estado del cliente\n  // ------------------------------------------------------------------\n  const S = {\n    ws: null, wsOk: false, retry: 0,\n    tel: null, telAt: 0, status: null, active: null,\n    history: [], lastHistSec: 0,\n    alarmLog: [], ackLog: [], comms: null,\n    pending: {},            // cmdId -> {action, sentAt, timer}\n    view: 'op', winS: 300,\n    anim: { idx: 0, lastPhase: 0, belt: 0, lastFrame: performance.now(), prevPockets: [], exiting: [] }\n  };\n  const TRANSFER = 0.25;\n  const $ = id => document.getElementById(id);\n  const fmt = (v, d = 1) => (v === null || v === undefined || !isFinite(v)) ? '–' : Number(v).toFixed(d);\n  const hhmmss = iso => { if (!iso) return '–'; const d = new Date(iso); return d.toLocaleTimeString('es-EC', { hour12: false }); };\n  const esc = s => String(s === null || s === undefined ? '' : s).replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\n\n  // ------------------------------------------------------------------\n  // WebSocket con reconexión automática\n  // ------------------------------------------------------------------\n  function wsUrl() {\n    const base = location.pathname.replace(/a07\\/?$/, '');\n    return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + base + 'ws/a07';\n  }\n  function connect() {\n    let ws;\n    try { ws = new WebSocket(wsUrl()); } catch (e) { scheduleReconnect(); return; }\n    S.ws = ws;\n    ws.onopen = () => { S.wsOk = true; S.retry = 0; ws.send(JSON.stringify({ type: 'hello' })); updatePills(); };\n    ws.onclose = () => { S.wsOk = false; updatePills(); scheduleReconnect(); };\n    ws.onerror = () => { try { ws.close(); } catch (e) { } };\n    ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } handle(m); };\n  }\n  function scheduleReconnect() {\n    S.retry = Math.min(S.retry + 1, 6);\n    setTimeout(connect, Math.min(1000 * Math.pow(1.6, S.retry), 10000));\n  }\n\n  function handle(m) {\n    switch (m.type) {\n      case 'snapshot':\n        S.tel = m.telemetry; S.telAt = m.telemetry ? Date.now() : 0;\n        S.status = m.status; S.active = m.active; S.comms = m.comms;\n        S.history = (m.history || []).slice();\n        S.alarmLog = m.alarmLog || []; S.ackLog = m.ackLog || [];\n        renderAll(); break;\n      case 'telemetry':\n        onTelemetry(m.data); S.comms = m.comms; break;\n      case 'status':\n        S.status = m.data; renderStatus(); updatePills(); break;\n      case 'alarm':\n        S.alarmLog.push(m.data); if (S.alarmLog.length > 300) S.alarmLog.shift();\n        renderAlarmLog();\n        if (m.data.event === 'RAISE') toast('ALARMA ' + m.data.severity + ': ' + m.data.name + ' — ' + m.data.message, true);\n        break;\n      case 'alarms_active':\n        S.active = m.data; renderActive(); break;\n      case 'ack':\n        onAck(m.data); break;\n      case 'resync':\n        if (S.ws && S.wsOk) S.ws.send(JSON.stringify({ type: 'hello' }));\n        break;\n      case 'cmd_sent':\n        break;\n    }\n  }\n\n  // ------------------------------------------------------------------\n  // Comandos (salen por WebSocket → Node-RED → MQTT /commands)\n  // ------------------------------------------------------------------\n  function uuid() {\n    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();\n    return 'web-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);\n  }\n  function sendCmd(action, extra) {\n    if (!S.wsOk) { toast('Sin conexión con Node-RED: comando no enviado', true); return; }\n    const cmd = Object.assign({ cmdId: uuid(), ts: new Date().toISOString(), source: 'dashboard-web', action: action }, extra || {});\n    S.ws.send(JSON.stringify({ type: 'cmd', cmd: cmd }));\n    const p = { action: action, sentAt: Date.now() };\n    p.timer = setTimeout(() => {\n      if (S.pending[cmd.cmdId]) { delete S.pending[cmd.cmdId]; setAckLine('Sin ACK en 5 s para \"' + action + '\" (¿simulador desconectado?)', 'bad'); }\n    }, 5000);\n    S.pending[cmd.cmdId] = p;\n    setAckLine('→ ' + action + (extra && extra.value !== undefined ? ' ' + extra.value : '') + ' enviado · cmdId ' + cmd.cmdId.slice(0, 8) + '… esperando ACK', 'wait');\n  }\n  function onAck(a) {\n    S.ackLog.push(a); if (S.ackLog.length > 50) S.ackLog.shift();\n    const p = S.pending[a.cmdId];\n    if (p) {\n      clearTimeout(p.timer); delete S.pending[a.cmdId];\n      const rtt = Date.now() - p.sentAt;\n      const ok = a.result === 'accepted';\n      setAckLine((ok ? '✔ ACK ' : '✖ ') + a.result + ' · ' + a.action + ' · ' + (a.detail || '') + ' · ' + rtt + ' ms', ok ? 'ok' : 'bad');\n      if (!ok) toast('Comando ' + a.result + ': ' + a.detail, true);\n    }\n    renderAckLog();\n  }\n  function setAckLine(t, cls) { const el = $('ack-line'); el.textContent = t; el.className = 'ack-line ' + (cls || ''); }\n  let toastTimer;\n  function toast(t, bad) {\n    const el = $('toast'); el.textContent = t; el.className = 'toast show' + (bad ? ' bad' : '');\n    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.className = 'toast'; }, 4500);\n  }\n\n  // ------------------------------------------------------------------\n  // Telemetría\n  // ------------------------------------------------------------------\n  function onTelemetry(t) {\n    const prev = S.tel;\n    S.tel = t; S.telAt = Date.now();\n    // índice de ciclo para animar la banda\n    if (prev && t.data.cyclePhase < prev.data.cyclePhase - 0.3) S.anim.idx++;\n    detectExits(prev, t);\n    // histórico a 1 muestra/s\n    const ms = Date.parse(t.ts), sec = Math.floor(ms / 1000);\n    if (sec !== S.lastHistSec) {\n      S.lastHistSec = sec;\n      const d = t.data, k = t.kpi || {};\n      S.history.push([ms, d.lineSpeed, d.speedSetpoint, d.lastFillLevel, k.unitsPerMin, k.rejectPct, k.availability]);\n      if (S.history.length > 3600) S.history.shift();\n    }\n    renderOp();\n  }\n  function detectExits(prev, t) {\n    if (!prev) return;\n    const was = prev.data.pockets[4];\n    const ids = t.data.pockets.filter(Boolean).map(b => b.id);\n    if (was && ids.indexOf(was.id) < 0) S.anim.exiting.push({ b: was, start: performance.now() });\n  }\n\n  // ------------------------------------------------------------------\n  // Render: operación\n  // ------------------------------------------------------------------\n  const STATE_TXT = {\n    PRODUCIENDO: ['Produciendo', 's-run'], ACELERANDO: ['Acelerando hacia la consigna', 's-trans'], DESACELERANDO: ['Reduciendo velocidad', 's-trans'],\n    DETENIENDO: ['Deteniendo (rampa de frenado)', 's-trans'], PARADA: ['Línea detenida', ''], BLOQUEADA: ['Estación bloqueada: la línea espera', 's-high'],\n    SIN_ENVASES: ['Mesa de alimentación vacía', 's-med']\n  };\n  function renderOp() {\n    const t = S.tel; if (!t) return;\n    const d = t.data, k = t.kpi || {};\n    const st = STATE_TXT[d.lineState] || [d.lineState, ''];\n    $('line-state').textContent = d.lineState.replace('_', ' ');\n    $('line-state-sub').textContent = st[0] + ' · ' + fmt(d.lineSpeed) + ' / ' + fmt(d.speedSetpoint, 0) + ' env/min';\n    $('line-state-box').className = 'state-box ' + st[1];\n    $('v-speed').textContent = fmt(d.lineSpeed);\n    $('v-speed-bar').style.width = Math.min(100, d.lineSpeed / 30 * 100) + '%';\n    $('v-sp-mark').style.left = Math.min(100, d.speedSetpoint / 30 * 100) + '%';\n    $('v-speed-sp').textContent = 'consigna ' + fmt(d.speedSetpoint, 0) + ' env/min · nominal 24 · escala 0–30';\n    $('v-fill').textContent = fmt(d.lastFillLevel);\n    $('v-fill-bar').style.width = (d.lastFillLevel || 0) + '%';\n    const fOk = d.lastFillLevel === null || Math.abs(d.lastFillLevel - 95) <= 2;\n    $('v-fill').style.color = fOk ? '' : 'var(--high)';\n    $('v-fill-sub').textContent = 'objetivo 95 ± 2 % · boquilla ' + fmt(d.fillLevel) + ' % · Q ' + fmt(d.fillFlow, 0) + ' mL/s · t ' + fmt(d.fillTime, 2) + ' s';\n    $('v-count').textContent = d.bottlesCounted;\n    $('v-count-sub').textContent = 'buenos ' + d.bottlesGood + ' · rechazados ' + d.bottlesRejected;\n    $('v-buffer').textContent = d.infeedBuffer;\n    $('v-caps').textContent = d.capHopper;\n    if (document.activeElement !== $('sp-num') && document.activeElement !== $('sp-range') && !S.spDirty) {\n      $('sp-num').value = d.speedSetpoint; $('sp-range').value = d.speedSetpoint;\n    }\n    renderKpis(k);\n    if (S.view === 'eng') throttledEng();\n  }\n  const KPIS = [\n    ['unitsPerMin', 'Producción', 'u/min', 'buenos en 60 s × 60 / ventana', 1, v => v < 18 ? 'warn' : ''],\n    ['rejectPct', 'Rechazos', '%', 'rechazados / contados (60 s)', 1, v => v > 5 ? 'bad' : v > 2 ? 'warn' : ''],\n    ['performance', 'Rendimiento', '%', 'contados × 2,5 s / tiempo en marcha', 1, v => v < 70 ? 'warn' : ''],\n    ['cycleTime', 'Tiempo de ciclo', 's', 'media de 10 intervalos de salida', 2, (v, k) => k.idealCycleTime && v > k.idealCycleTime * 1.3 ? 'warn' : ''],\n    ['availability', 'Disponibilidad', '%', 't en marcha / t planificado (60 s)', 1, v => v < 60 ? 'bad' : v < 85 ? 'warn' : ''],\n    ['oee', 'OEE', '%', 'disponib. × rendim. × calidad', 1, v => v < 50 ? 'warn' : '']\n  ];\n  function renderKpis(k) {\n    const box = $('kpis');\n    if (!box.children.length) box.innerHTML = KPIS.map(x => '<div class=\"kpi\" id=\"kpi-' + x[0] + '\" title=\"' + x[3] + '\"><div class=\"lbl\">' + x[1] + '</div><div class=\"v\"><span>–</span><small>' + x[2] + '</small></div><div class=\"f\">' + x[3] + '</div></div>').join('');\n    KPIS.forEach(x => {\n      const el = $('kpi-' + x[0]); const v = k[x[0]];\n      el.querySelector('span').textContent = fmt(v, x[4]);\n      el.className = 'kpi ' + (v === null || v === undefined ? '' : x[5](v, k));\n    });\n  }\n  function renderActive() {\n    const list = (S.active && S.active.alarms) || [];\n    $('alarm-count').textContent = list.length ? list.length + ' activa(s) / sin normalizar' : 'ninguna';\n    const tb = $('tbl-active').querySelector('tbody');\n    if (!list.length) { tb.innerHTML = '<tr class=\"empty\"><td colspan=\"6\">Sin alarmas activas.</td></tr>'; return; }\n    tb.innerHTML = list.map(a => {\n      const cls = (a.acked ? '' : 'unack') + (a.state === 'ACTIVA_NO_RECONOCIDA' ? ' blink' : '');\n      return '<tr class=\"' + cls + '\"><td><span class=\"sev ' + a.severity + '\">' + a.severity + '</span></td><td><b>' + esc(a.name) + '</b><div class=\"muted small\">' + esc(a.condition) + '</div></td>' +\n        '<td class=\"mono\">' + a.state.replace(/_/g, ' ') + '</td><td>' + esc(a.message) + '</td><td class=\"mono\">' + hhmmss(a.raisedAt) + '</td>' +\n        '<td>' + (a.acked ? '<span class=\"muted small\">reconocida ' + hhmmss(a.ackAt) + '</span>' : '<button class=\"btn small\" data-ack=\"' + esc(a.alarmId) + '\">Reconocer</button>') + '</td></tr>';\n    }).join('');\n  }\n\n  // ------------------------------------------------------------------\n  // Mímico SVG animado\n  // ------------------------------------------------------------------\n  const NS = 'http://www.w3.org/2000/svg';\n  const SLOT = [210, 390, 570, 750, 930], PITCH = 180, BELT_Y = 300, EXIT_X = 1110;\n  const svg = $('mimic');\n  const E = {};\n  function el(tag, attrs, parent) {\n    const e = document.createElementNS(NS, tag);\n    for (const k in attrs) e.setAttribute(k, attrs[k]);\n    (parent || svg).appendChild(e); return e;\n  }\n  function txt(x, y, s, cls, parent, anchor) { const t = el('text', { x: x, y: y, class: cls || '' }, parent); if (anchor) t.setAttribute('text-anchor', anchor); t.textContent = s; return t; }\n  const BOTTLE_D = 'M-6 208 L6 208 L6 222 Q17 230 17 244 L17 295 Q17 300 12 300 L-12 300 Q-17 300 -17 295 L-17 244 Q-17 230 -6 222 Z';\n\n  function buildMimic() {\n    const defs = el('defs', {});\n    const cp = el('clipPath', { id: 'bclip' }, defs); el('path', { d: BOTTLE_D }, cp);\n    const pat = el('pattern', { id: 'beltpat', width: 30, height: 16, patternUnits: 'userSpaceOnUse' }, defs);\n    el('rect', { width: 30, height: 16, fill: '#6f7a85' }, pat);\n    el('rect', { width: 4, height: 16, fill: '#59636d' }, pat);\n    E.beltPat = pat;\n\n    // Mesa de alimentación\n    el('rect', { x: 18, y: 222, width: 140, height: 78, rx: 4, fill: '#cfd4d9', stroke: '#8b96a1' });\n    E.bufDots = [];\n    for (let i = 0; i < 30; i++) E.bufDots.push(el('circle', { cx: 30 + (i % 10) * 13, cy: 240 + Math.floor(i / 10) * 18, r: 5.5, fill: '#f6f8f9', stroke: '#8b96a1' }));\n    txt(88, 205, 'Mesa de alimentación', 'st-name');\n    E.bufTxt = txt(88, 335, '– envases', 'val', null, 'middle');\n    E.bufState = chip(88, 352);\n\n    // Transportador\n    el('rect', { x: 160, y: BELT_Y, width: 930, height: 16, fill: 'url(#beltpat)', stroke: '#4a555f' });\n    el('circle', { cx: 160, cy: BELT_Y + 8, r: 9, fill: '#4a555f' }); el('circle', { cx: 1090, cy: BELT_Y + 8, r: 9, fill: '#4a555f' });\n    E.motor = el('circle', { cx: 1090, cy: BELT_Y + 8, r: 5, fill: '#8b96a1' });\n\n    // Estación 1: llenadora\n    const F = SLOT[1];\n    el('rect', { x: F - 55, y: 26, width: 110, height: 62, rx: 6, fill: '#f6f8f9', stroke: '#5f6b77', 'stroke-width': 1.5 });\n    E.tankLiq = el('rect', { x: F - 53, y: 50, width: 106, height: 36, fill: '#c9772b', opacity: .85 });\n    txt(F, 20, 'Tanque pulmón', 'val', null, 'middle');\n    el('rect', { x: F - 4, y: 88, width: 8, height: 30, fill: '#8b96a1' });\n    E.valve = el('path', { d: `M${F - 12} 118 L${F + 12} 132 L${F + 12} 118 L${F - 12} 132 Z`, fill: '#8b96a1', stroke: '#4a555f' });\n    E.nozzleG = el('g', {});\n    el('rect', { x: F - 5, y: 132, width: 10, height: 40, fill: '#5f6b77' }, E.nozzleG);\n    el('rect', { x: F - 14, y: 132, width: 28, height: 10, fill: '#4a555f' }, E.nozzleG);\n    E.stream = el('rect', { x: F - 2, y: 172, width: 4, height: 0, fill: '#c9772b' });\n    E.flowTxt = txt(F + 20, 150, 'Q – mL/s', 'val');\n\n    // Estación 2: tapadora\n    const C = SLOT[2];\n    el('rect', { x: C - 46, y: 60, width: 8, height: 238, fill: '#9aa4ae' }); el('rect', { x: C - 46, y: 60, width: 100, height: 10, fill: '#9aa4ae' });\n    E.capHead = el('g', {});\n    el('rect', { x: C - 22, y: 110, width: 44, height: 50, rx: 3, fill: '#5f6b77' }, E.capHead);\n    E.chuck = el('g', {}, E.capHead);\n    el('rect', { x: C - 12, y: 160, width: 24, height: 22, fill: '#4a555f' }, E.chuck);\n    E.chuckMarks = [0, 1, 2].map(i => el('rect', { x: C - 10 + i * 8, y: 162, width: 3, height: 18, fill: '#aab4be' }, E.chuck));\n    // tolva de tapas\n    el('path', { d: `M${C + 60} 70 L${C + 130} 70 L${C + 112} 128 L${C + 78} 128 Z`, fill: '#f6f8f9', stroke: '#5f6b77', 'stroke-width': 1.5 });\n    E.hopLiq = el('path', { d: '', fill: '#4a555f', opacity: .8 });\n    el('path', { d: `M${C + 95} 128 L${C + 95} 150 L${C + 20} 150`, fill: 'none', stroke: '#8b96a1', 'stroke-width': 4 });\n    E.hopTxt = txt(C + 95, 62, 'Tapas –/20', 'val', null, 'middle');\n\n    // Estación 3: etiquetadora\n    const L = SLOT[3];\n    E.roll = el('g', { transform: `translate(${L + 70},170)` });\n    el('circle', { r: 32, fill: '#f6f8f9', stroke: '#5f6b77', 'stroke-width': 1.5 }, E.roll);\n    el('circle', { r: 10, fill: '#5f6b77' }, E.roll);\n    for (let i = 0; i < 4; i++) el('line', { x1: 0, y1: 0, x2: 30 * Math.cos(i * Math.PI / 2), y2: 30 * Math.sin(i * Math.PI / 2), stroke: '#8b96a1', 'stroke-width': 2 }, E.roll);\n    E.web = el('path', { d: `M${L + 70} 202 L${L + 30} 266 L${L + 17} 266`, fill: 'none', stroke: '#e9d27a', 'stroke-width': 4 });\n    el('rect', { x: L + 24, y: 250, width: 10, height: 34, fill: '#5f6b77' });\n    E.jam = txt(L + 70, 120, '', 'st-state', null, 'middle'); E.jam.setAttribute('fill', '#c62f2a');\n\n    // Estación 4: inspección + rechazo\n    const I = SLOT[4];\n    el('rect', { x: I - 38, y: 170, width: 8, height: 130, fill: '#5f6b77' }); el('rect', { x: I + 30, y: 170, width: 8, height: 130, fill: '#5f6b77' });\n    E.beams = [190, 215, 240, 265, 290].map(y => el('line', { x1: I - 30, y1: y, x2: I + 30, y2: y, stroke: '#2f6fb3', 'stroke-width': 1.2, 'stroke-dasharray': '3 3', opacity: .7 }));\n    el('path', { d: `M${I + 20} 316 L${I + 75} 334 L${I + 75} 340`, fill: 'none', stroke: '#8b96a1', 'stroke-width': 3 });\n    el('rect', { x: I + 60, y: 336, width: 84, height: 40, rx: 3, fill: '#f0d8d6', stroke: '#c62f2a' });\n    txt(I + 102, 352, 'Rechazos', 'val', null, 'middle');\n    E.rejTxt = txt(I + 102, 369, '0', 'val', null, 'middle'); E.rejTxt.setAttribute('style', 'font-weight:700');\n\n    // Producto terminado\n    el('rect', { x: 1110, y: 236, width: 82, height: 64, rx: 4, fill: '#d9e7dd', stroke: '#2e7d4f' });\n    txt(1151, 228, 'Producto OK', 'st-name');\n    E.goodTxt = txt(1151, 275, '0', 'val', null, 'middle'); E.goodTxt.setAttribute('style', 'font-size:18px;font-weight:700');\n\n    // Nombres y estados de estación\n    E.chips = {};\n    [['filler', 'Llenado', SLOT[1]], ['capper', 'Tapado', SLOT[2]], ['labeler', 'Etiquetado', SLOT[3]], ['inspection', 'Inspección', SLOT[4]]].forEach(([k, n, x]) => {\n      txt(x, 336, n, 'st-name'); E.chips[k] = chip(x, 352);\n    });\n    txt(1151, 336, 'Motor banda', 'st-name'); E.motorTxt = txt(1151, 354, '–', 'val', null, 'middle');\n\n    E.bottleLayer = el('g', {});\n    E.bottles = [];\n  }\n  function chip(x, y) {\n    const g = el('g', {});\n    const r = el('rect', { x: x - 52, y: y - 11, width: 104, height: 18, rx: 3, fill: '#e2e5e8', stroke: '#b4bcc4' }, g);\n    const t = el('text', { x: x, y: y + 2, class: 'st-state', fill: '#4a5560' }, g);\n    return { r: r, t: t };\n  }\n  function setChip(c, state) {\n    const s = state || '–';\n    let fill = '#e2e5e8', ink = '#4a5560', stroke = '#b4bcc4';\n    if (s === 'BLOQUEADA') { fill = '#c62f2a'; ink = '#fff'; stroke = '#c62f2a'; }\n    else if (s === 'SIN_ENVASES' || s === 'RECHAZO' || s === 'VACIA' || s === 'ESPERA_TAPA') { fill = '#d9930d'; ink = '#1b2229'; stroke = '#d9930d'; }\n    else if (/LLENANDO|TAPANDO|ETIQUETANDO|TRANSFERENCIA/.test(s)) { ink = '#2f6fb3'; stroke = '#9db8d6'; }\n    else if (s === 'OK' || s === 'LISTA') { ink = '#2e7d4f'; }\n    c.r.setAttribute('fill', fill); c.r.setAttribute('stroke', stroke); c.t.setAttribute('fill', ink); c.t.textContent = s.replace('_', ' ');\n  }\n  function makeBottle() {\n    const g = el('g', {}, E.bottleLayer);\n    const liq = el('rect', { x: -18, y: 300, width: 36, height: 0, fill: '#c9772b', 'clip-path': 'url(#bclip)' }, g);\n    const body = el('path', { d: BOTTLE_D, fill: 'rgba(246,248,249,.35)', stroke: '#5f6b77', 'stroke-width': 1.5 }, g);\n    const label = el('rect', { x: -17, y: 252, width: 34, height: 26, fill: '#e9d27a', stroke: '#a68f2a', 'stroke-width': .8 }, g);\n    const cap = el('rect', { x: -8, y: 199, width: 16, height: 10, rx: 2, fill: '#2b333b' }, g);\n    const mark = el('text', { x: 0, y: 194, 'text-anchor': 'middle', class: 'st-state', fill: '#c62f2a' }, g);\n    return { g: g, liq: liq, body: body, label: label, cap: cap, mark: mark };\n  }\n  function drawBottle(o, b, x, y, fillOverride) {\n    o.g.style.display = '';\n    o.g.setAttribute('transform', 'translate(' + x.toFixed(1) + ',' + (y || 0).toFixed(1) + ')');\n    const f = Math.max(0, Math.min(100, fillOverride !== undefined ? fillOverride : b.fill));\n    const h = 92 * f / 100;\n    o.liq.setAttribute('y', (300 - h).toFixed(1)); o.liq.setAttribute('height', h.toFixed(1));\n    o.cap.style.display = b.capped ? '' : 'none';\n    o.label.style.display = b.labeled ? '' : 'none';\n    o.body.setAttribute('stroke', b.reject ? '#c62f2a' : '#5f6b77');\n    o.body.setAttribute('stroke-width', b.reject ? 3 : 1.5);\n    o.mark.textContent = b.reject ? '✖ ' + (b.cause || '') : '';\n  }\n\n  function frame(now) {\n    const A = S.anim;\n    const dtf = Math.min(0.1, (now - A.lastFrame) / 1000); A.lastFrame = now;\n    const t = S.tel;\n    if (t) {\n      const d = t.data;\n      const age = Math.min(1, (Date.now() - S.telAt) / 1000);\n      const stale = Date.now() - S.telAt > 3000;\n      const v = stale ? 0 : d.lineSpeed;\n      let ph = d.cyclePhase;\n      if (!stale && ph < 1) ph = Math.min(1, ph + v / 60 * age);\n      const moveFrac = ph < TRANSFER && v > 0 ? ph / TRANSFER : 1;\n      // banda: avanza un paso por ciclo durante la transferencia\n      const beltX = ((A.idx + (ph < TRANSFER ? ph / TRANSFER : 1)) * PITCH) % 30;\n      E.beltPat.setAttribute('patternTransform', 'translate(' + beltX.toFixed(1) + ',0)');\n      // envases en las posiciones\n      let used = 0;\n      d.pockets.forEach((b, i) => {\n        if (!b) return;\n        if (!E.bottles[used]) E.bottles[used] = makeBottle();\n        const x = SLOT[i] - PITCH * (1 - moveFrac);\n        let fillShown;\n        if (i === 1 && b.filling && ph >= TRANSFER && !stale) fillShown = Math.min(95, b.fill + d.fillFlow / 500 * 100 * age);\n        drawBottle(E.bottles[used], b, x, 0, fillShown);\n        used++;\n      });\n      // envases saliendo (OK hacia la derecha, rechazo hacia la caja)\n      A.exiting = A.exiting.filter(e => now - e.start < 900);\n      A.exiting.forEach(e => {\n        if (!E.bottles[used]) E.bottles[used] = makeBottle();\n        const k = Math.min(1, (now - e.start) / 700);\n        if (e.b.reject) drawBottle(E.bottles[used], e.b, SLOT[4] + 100 * k, 60 * k * k);\n        else drawBottle(E.bottles[used], e.b, SLOT[4] + (EXIT_X - SLOT[4] + 40) * k, 0);\n        E.bottles[used].g.style.opacity = String(1 - k * 0.6);\n        used++;\n      });\n      for (let j = 0; j < E.bottles.length; j++) { if (j >= used) E.bottles[j].g.style.display = 'none'; else if (j < used - A.exiting.length) E.bottles[j].g.style.opacity = '1'; }\n\n      // llenadora\n      const filling = d.stations.filler === 'LLENANDO' && !stale;\n      E.nozzleG.setAttribute('transform', 'translate(0,' + (filling ? 26 : 0) + ')');\n      E.valve.setAttribute('fill', filling ? '#2f6fb3' : '#8b96a1');\n      E.stream.setAttribute('height', filling ? 40 : 0); E.stream.setAttribute('y', 198);\n      E.tankLiq.setAttribute('y', 50 + (1 - d.fillFlow / 330) * 30); E.tankLiq.setAttribute('height', 36 - (1 - d.fillFlow / 330) * 30);\n      E.flowTxt.textContent = 'Q ' + fmt(d.fillFlow, 0) + ' mL/s';\n      E.flowTxt.setAttribute('fill', d.fillFlow < 250 ? '#c62f2a' : '#4a5560');\n      // tapadora\n      const capping = d.stations.capper === 'TAPANDO' && !stale;\n      E.capHead.setAttribute('transform', 'translate(0,' + (capping ? 18 : 0) + ')');\n      if (capping) E.chuckMarks.forEach((m, i) => m.setAttribute('x', (SLOT[2] - 10 + ((i * 8 + now / 25) % 22)).toFixed(1)));\n      const hf = Math.max(0, Math.min(1, d.capHopper / 20));\n      const C = SLOT[2], yTop = 128 - 58 * hf, wTop = 17 + 35 * hf;\n      E.hopLiq.setAttribute('d', `M${C + 95 - wTop} ${yTop} L${C + 95 + wTop} ${yTop} L${C + 112} 128 L${C + 78} 128 Z`);\n      E.hopTxt.textContent = 'Tapas ' + d.capHopper + '/20';\n      E.hopTxt.setAttribute('fill', d.capHopper < 3 ? '#c62f2a' : '#4a5560');\n      // etiquetadora\n      const labeling = d.stations.labeler === 'ETIQUETANDO' && !stale;\n      if (labeling) { A.roll = (A.roll || 0) + 240 * dtf; }\n      E.roll.setAttribute('transform', 'translate(' + (SLOT[3] + 70) + ',170) rotate(' + ((A.roll || 0) % 360).toFixed(1) + ')');\n      E.jam.textContent = d.stations.labeler === 'BLOQUEADA' ? 'ATASCO' : '';\n      // inspección\n      const rej = d.pockets[4] && d.pockets[4].reject;\n      E.beams.forEach(b => b.setAttribute('stroke', rej ? '#c62f2a' : '#2f6fb3'));\n      E.rejTxt.textContent = d.bottlesRejected;\n      E.goodTxt.textContent = d.bottlesGood;\n      // mesa\n      E.bufDots.forEach((c, i) => c.setAttribute('fill', i < d.infeedBuffer ? '#f6f8f9' : 'transparent'));\n      E.bufDots.forEach((c, i) => c.setAttribute('stroke', i < d.infeedBuffer ? '#5f6b77' : '#c4ccd3'));\n      E.bufTxt.textContent = d.infeedBuffer + ' envases';\n      setChip(E.bufState, d.stations.infeed);\n      for (const k in E.chips) setChip(E.chips[k], stale ? 'SIN DATOS' : d.stations[k]);\n      E.motor.setAttribute('fill', v > 0.1 ? '#2e7d4f' : '#8b96a1');\n      E.motorTxt.textContent = fmt(v) + ' env/min';\n    }\n    requestAnimationFrame(frame);\n  }\n\n  // ------------------------------------------------------------------\n  // Render: ingeniería\n  // ------------------------------------------------------------------\n  let engLast = 0;\n  function throttledEng() { const n = Date.now(); if (n - engLast > 900) { engLast = n; renderEng(); } }\n  function renderEng() {\n    drawCharts();\n    renderStations(); renderKpiTable(); renderComms(); renderRaw();\n  }\n  function renderStations() {\n    const t = S.tel, st = S.status;\n    const tb = $('tbl-stations').querySelector('tbody');\n    if (!st || !st.stations) { tb.innerHTML = '<tr class=\"empty\"><td colspan=\"4\">Sin estado.</td></tr>'; return; }\n    const extra = { infeed: s => 'mesa ' + (t ? t.data.infeedBuffer : s.buffer) + ' env', filler: s => 'Q ' + fmt(t ? t.data.fillFlow : s.flow, 0) + ' mL/s', capper: s => 'tolva ' + (t ? t.data.capHopper : s.caps) + ' tapas', labeler: () => '', inspection: () => t && t.data.lastFillLevel !== null ? 'último ' + fmt(t.data.lastFillLevel) + ' %' : '' };\n    tb.innerHTML = Object.keys(st.stations).map(k => {\n      const s = st.stations[k]; const state = t ? t.data.stations[k] : s.state;\n      const cls = state === 'BLOQUEADA' ? 'bad' : (/SIN_|RECHAZO|VACIA/.test(state) ? 'warn' : (/ANDO|TRANSFER/.test(state) ? 'work' : ''));\n      return '<tr><td>' + s.name + '</td><td><span class=\"chip ' + cls + '\">' + state + '</span></td><td>' + (s.fault ? '<span class=\"chip warn\">' + s.fault + '</span>' : '<span class=\"muted\">—</span>') + '</td><td class=\"mono\">' + (extra[k] ? extra[k](s) : '') + '</td></tr>';\n    }).join('');\n  }\n  function renderKpiTable() {\n    const t = S.tel; if (!t || !t.kpi) return;\n    const k = t.kpi, c = k.cumulative || {};\n    const rows = [['Producción', k.unitsPerMin, c.unitsPerMin, 'u/min'], ['Rechazos', k.rejectPct, c.rejectPct, '%'], ['Rendimiento', k.performance, c.performance, '%'],\n      ['Tiempo de ciclo (ideal ' + fmt(k.idealCycleTime, 2) + ')', k.cycleTime, null, 's'], ['Disponibilidad', k.availability, c.availability, '%'], ['Calidad', k.quality, null, '%'], ['OEE', k.oee, null, '%']];\n    $('tbl-kpi').querySelector('tbody').innerHTML = rows.map(r => '<tr><td>' + r[0] + '</td><td class=\"mono\">' + fmt(r[1], 2) + '</td><td class=\"mono\">' + fmt(r[2], 2) + '</td><td>' + r[3] + '</td></tr>').join('');\n  }\n  function renderComms() {\n    const c = S.comms || {}; const st = S.status;\n    const age = S.telAt ? ((Date.now() - S.telAt) / 1000).toFixed(1) + ' s' : '–';\n    const items = [['WebSocket', S.wsOk ? 'conectado' : 'desconectado'], ['Simulador (status)', st ? (st.online ? 'en línea' : 'FUERA DE LÍNEA') : '–'],\n      ['Última telemetría', age], ['Último seq', c.lastSeq], ['Mensajes perdidos (huecos seq)', c.seqGaps], ['Latencia sim→dashboard', c.latencyMs !== undefined && c.latencyMs !== null ? c.latencyMs + ' ms' : '–'],\n      ['Recibidos por tópico', c.rx ? Object.keys(c.rx).map(k => k + ': ' + c.rx[k]).join(' · ') : '–'], ['Errores de JSON', c.parseErrors], ['Comandos publicados', c.cmdsSent], ['Pasarela activa desde', hhmmss(c.since)],\n      ['Simulador activo desde', st ? hhmmss(st.startedAt) + ' (' + st.uptime_s + ' s)' : '–']];\n    $('comms').innerHTML = items.map(i => '<dt>' + i[0] + '</dt><dd>' + esc(i[1] === undefined ? '–' : i[1]) + '</dd>').join('');\n  }\n  function renderRaw() {\n    const t = S.tel; if (!t) return;\n    const d = t.data, u = t.units || {};\n    $('raw-ts').textContent = 'seq ' + t.seq + ' · ' + t.ts;\n    const keys = ['lineState', 'run', 'lineSpeed', 'speedSetpoint', 'cyclePhase', 'fillLevel', 'lastFillLevel', 'fillFlow', 'fillTime', 'bottlesCounted', 'bottlesGood', 'bottlesRejected', 'infeedBuffer', 'capHopper'];\n    let html = keys.map(k => '<dt>' + k + '</dt><dd>' + esc(d[k]) + (u[k] ? ' ' + u[k] : '') + '</dd>').join('');\n    html += '<dt>rechazos por causa</dt><dd>' + esc(Object.keys(d.rejectsByCause || {}).map(k => k + '=' + d.rejectsByCause[k]).join(' ')) + '</dd>';\n    html += '<dt>tiempos (s)</dt><dd>' + esc(Object.keys(d.times || {}).map(k => k + '=' + d.times[k]).join(' ')) + '</dd>';\n    $('raw').innerHTML = html;\n  }\n  function renderStatus() {\n    const st = S.status; if (!st) return;\n    if (st.params) $('params').innerHTML = Object.keys(st.params).map(k => '<dt>' + k + '</dt><dd>' + st.params[k] + '</dd>').join('');\n    const F = [['caps', 'Falta de tapas', 'alimentador de tapas detenido'], ['fill', 'Defecto de llenado', 'boquilla obstruida: caudal −30 %'], ['bottles', 'Falta de envases', 'despaletizador detenido'], ['jam', 'Atasco en etiquetadora', 'bloqueo mecánico']];\n    const f = st.faults || {};\n    $('faults').innerHTML = F.map(x => '<button class=\"btn' + (f[x[0]] ? ' on' : '') + '\" data-fault=\"' + x[0] + '\" data-active=\"' + (!f[x[0]]) + '\">' + (f[x[0]] ? '● ACTIVA · ' : '○ ') + x[1] + '<div class=\"muted small\">' + x[2] + (f[x[0]] ? ' — pulse para retirar' : '') + '</div></button>').join('');\n    if (S.view === 'eng') renderStations();\n  }\n  function renderAlarmLog() {\n    const tb = $('tbl-alog').querySelector('tbody');\n    const L = S.alarmLog.slice().reverse();\n    const EV = { RAISE: 'Activación', ACK: 'Reconocimiento', CLEAR: 'Normalización' };\n    if (!L.length) { tb.innerHTML = '<tr class=\"empty\"><td colspan=\"7\">Sin eventos registrados.</td></tr>'; return; }\n    tb.innerHTML = L.map(a => '<tr><td class=\"mono\">' + new Date(a.eventTs || a.ts).toLocaleString('es-EC', { hour12: false }) + '</td><td>' + (EV[a.event] || a.event) + '</td><td>' + esc(a.name) + '<div class=\"muted small mono\">' + esc(a.alarmId) + '</div></td><td><span class=\"sev ' + a.severity + '\">' + a.severity + '</span></td><td class=\"mono\">' + esc(a.state) + '</td><td>' + esc(a.message) + '</td><td>' + esc(a.ackBy || '') + '</td></tr>').join('');\n  }\n  function renderAckLog() {\n    const tb = $('tbl-ack').querySelector('tbody');\n    const L = S.ackLog.slice().reverse();\n    if (!L.length) { tb.innerHTML = '<tr class=\"empty\"><td colspan=\"5\">Sin comandos.</td></tr>'; return; }\n    tb.innerHTML = L.map(a => '<tr><td class=\"mono\">' + hhmmss(a.ts) + '</td><td class=\"mono\">' + esc(String(a.cmdId || '').slice(0, 13)) + '</td><td>' + esc(a.action) + (a.value !== undefined && a.value !== null ? ' ' + esc(a.value) : '') + '</td><td><span class=\"chip ' + (a.result === 'accepted' ? 'ok' : 'bad') + '\">' + esc(a.result) + '</span></td><td>' + esc(a.detail) + '</td></tr>').join('');\n  }\n  function renderAll() { renderOp(); renderActive(); renderStatus(); renderAlarmLog(); renderAckLog(); renderEng(); updatePills(); }\n\n  // ------------------------------------------------------------------\n  // Gráficas de históricos (canvas, sin librerías)\n  // ------------------------------------------------------------------\n  const hover = {};\n  function drawCharts() {\n    const tMax = Date.now(), tMin = tMax - S.winS * 1000;\n    const H = S.history.filter(r => r[0] >= tMin);\n    const col = i => H.map(r => [r[0], r[i]]);\n    chart('ch-speed', { tMin, tMax, yMin: 0, yMax: 32, unit: 'env/min', series: [{ d: col(2), c: '#8b96a1', n: 'consigna', dash: [5, 4] }, { d: col(1), c: '#1b2229', n: 'velocidad' }] });\n    chart('ch-fill', { tMin, tMax, yMin: 60, yMax: 100, band: [93, 97], unit: '%', series: [{ d: col(3), c: '#c9772b', n: 'nivel' }] });\n    const prodMax = Math.max(32, Math.ceil(Math.max(0, ...H.map(r => Math.max(r[4] || 0, r[5] || 0))) / 10) * 10);\n    chart('ch-prod', { tMin, tMax, yMin: 0, yMax: prodMax, unit: 'u/min · %', series: [{ d: col(4), c: '#2f6fb3', n: 'u/min' }, { d: col(5), c: '#c62f2a', n: 'rechazo %' }] });\n  }\n  function chart(id, o) {\n    const cv = $(id); const dpr = window.devicePixelRatio || 1;\n    const w = cv.clientWidth, h = cv.clientHeight; if (!w) return;\n    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }\n    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);\n    const L = 34, R = 8, T = 8, B = 20, pw = w - L - R, ph = h - T - B;\n    const X = t => L + (t - o.tMin) / (o.tMax - o.tMin) * pw, Y = v => T + (1 - (v - o.yMin) / (o.yMax - o.yMin)) * ph;\n    g.font = '10px system-ui'; g.fillStyle = '#6d7883'; g.strokeStyle = '#dde1e5'; g.lineWidth = 1;\n    for (let i = 0; i <= 4; i++) { const v = o.yMin + (o.yMax - o.yMin) * i / 4, y = Y(v); g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); g.fillText(v.toFixed(0), 4, y + 3); }\n    for (let i = 0; i <= 4; i++) { const t = o.tMin + (o.tMax - o.tMin) * i / 4; const x = X(t); g.fillText(new Date(t).toLocaleTimeString('es-EC', { hour12: false, hour: '2-digit', minute: '2-digit', second: S.winS <= 300 ? '2-digit' : undefined }), Math.min(x - 18, w - 46), h - 5); }\n    if (o.band) { g.fillStyle = 'rgba(46,125,79,.14)'; g.fillRect(L, Y(o.band[1]), pw, Y(o.band[0]) - Y(o.band[1])); }\n    o.series.forEach(s => {\n      g.strokeStyle = s.c; g.lineWidth = 1.6; g.setLineDash(s.dash || []); g.beginPath();\n      let pen = false, prevT = 0;\n      s.d.forEach(p => {\n        if (p[1] === null || p[1] === undefined || !isFinite(p[1])) { pen = false; return; }\n        const x = X(p[0]), y = Y(Math.max(o.yMin, Math.min(o.yMax, p[1])));\n        if (!pen || p[0] - prevT > 5000) g.moveTo(x, y); else g.lineTo(x, y);\n        pen = true; prevT = p[0];\n      });\n      g.stroke(); g.setLineDash([]);\n    });\n    // leyenda\n    let lx = L + 6; o.series.forEach(s => { g.fillStyle = s.c; g.fillRect(lx, T + 4, 10, 3); g.fillStyle = '#4a5560'; g.fillText(s.n, lx + 13, T + 9); lx += g.measureText(s.n).width + 26; });\n    // cursor\n    const hx = hover[id];\n    if (hx !== undefined && hx > L && hx < L + pw) {\n      const tt = o.tMin + (hx - L) / pw * (o.tMax - o.tMin);\n      g.strokeStyle = '#4a5560'; g.beginPath(); g.moveTo(hx, T); g.lineTo(hx, T + ph); g.stroke();\n      const vals = o.series.map(s => { let best = null; for (const p of s.d) if (best === null || Math.abs(p[0] - tt) < Math.abs(best[0] - tt)) best = p; return s.n + ' ' + (best && best[1] !== null ? Number(best[1]).toFixed(1) : '–'); });\n      const label = new Date(tt).toLocaleTimeString('es-EC', { hour12: false }) + '  ' + vals.join('  ');\n      const tw = g.measureText(label).width + 10;\n      const bx = Math.min(hx + 6, w - tw - 2);\n      g.fillStyle = 'rgba(43,51,59,.92)'; g.fillRect(bx, T + 14, tw, 16); g.fillStyle = '#fff'; g.fillText(label, bx + 5, T + 25);\n    }\n  }\n  ['ch-speed', 'ch-fill', 'ch-prod'].forEach(id => {\n    const cv = $(id);\n    cv.addEventListener('mousemove', e => { hover[id] = e.offsetX; drawCharts(); });\n    cv.addEventListener('mouseleave', () => { delete hover[id]; drawCharts(); });\n  });\n\n  // ------------------------------------------------------------------\n  // Indicadores de conexión y reloj\n  // ------------------------------------------------------------------\n  function updatePills() {\n    const ws = $('pill-ws'), sim = $('pill-sim'), dat = $('pill-data');\n    ws.className = 'pill ' + (S.wsOk ? 'ok' : 'bad');\n    const on = S.status && S.status.online;\n    sim.className = 'pill ' + (S.status ? (on ? 'ok' : 'bad') : '');\n    sim.lastChild.textContent = S.status ? (on ? 'Simulador en línea' : 'Simulador FUERA DE LÍNEA') : 'Simulador';\n    const age = S.telAt ? (Date.now() - S.telAt) / 1000 : Infinity;\n    dat.className = 'pill ' + (age < 2 ? 'ok' : age < 5 ? 'warn' : 'bad');\n    dat.lastChild.textContent = isFinite(age) ? 'Telemetría ' + age.toFixed(1) + ' s' : 'Telemetría –';\n    if (age > 3 && S.tel) { $('line-state').textContent = 'SIN DATOS'; $('line-state-sub').textContent = 'Última telemetría hace ' + age.toFixed(0) + ' s'; $('line-state-box').className = 'state-box s-med'; }\n  }\n  setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('es-EC', { hour12: false }); updatePills(); if (S.view === 'eng') renderComms(); }, 1000);\n\n  // ------------------------------------------------------------------\n  // Eventos de la interfaz\n  // ------------------------------------------------------------------\n  document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => {\n    document.querySelectorAll('.view-btn').forEach(x => x.classList.toggle('active', x === b));\n    S.view = b.dataset.view;\n    $('view-op').classList.toggle('active', S.view === 'op'); $('view-eng').classList.toggle('active', S.view === 'eng');\n    try { localStorage.setItem('a07-view', S.view); } catch (e) { }\n    if (S.view === 'eng') renderEng();\n  }));\n  $('btn-start').addEventListener('click', () => sendCmd('start'));\n  $('btn-stop').addEventListener('click', () => sendCmd('stop'));\n  $('sp-range').addEventListener('input', e => { $('sp-num').value = e.target.value; S.spDirty = true; });\n  $('sp-num').addEventListener('input', e => { $('sp-range').value = e.target.value; S.spDirty = true; });\n  $('btn-speed').addEventListener('click', () => { S.spDirty = false; sendCmd('setSpeed', { value: Number($('sp-num').value) }); });\n  $('btn-reset').addEventListener('click', () => sendCmd('resetCounters'));\n  document.body.addEventListener('click', e => {\n    const a = e.target.closest('[data-ack]'); if (a) sendCmd('ackAlarm', { alarmId: a.dataset.ack });\n    const f = e.target.closest('[data-fault]'); if (f) sendCmd('fault', { fault: f.dataset.fault, active: f.dataset.active === 'true' });\n  });\n  $('win-seg').addEventListener('click', e => {\n    const b = e.target.closest('button[data-w]'); if (!b) return;\n    S.winS = Number(b.dataset.w);\n    $('win-seg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));\n    try { localStorage.setItem('a07-win', S.winS); } catch (er) { }\n    drawCharts();\n  });\n  $('btn-csv-alarms').addEventListener('click', () => {\n    const head = 'eventTs,event,alarmId,code,name,severity,state,message,raisedAt,ackAt,ackBy,clearedAt';\n    const rows = S.alarmLog.map(a => [a.eventTs, a.event, a.alarmId, a.code, a.name, a.severity, a.state, a.message, a.raisedAt, a.ackAt, a.ackBy, a.clearedAt].map(v => '\"' + String(v === null || v === undefined ? '' : v).replace(/\"/g, '\"\"') + '\"').join(','));\n    const blob = new Blob([head + '\\n' + rows.join('\\n')], { type: 'text/csv' });\n    const url = URL.createObjectURL(blob); const ln = document.createElement('a');\n    ln.href = url; ln.download = 'A07_registro_alarmas.csv'; document.body.appendChild(ln); ln.click(); ln.remove(); URL.revokeObjectURL(url);\n  });\n  window.addEventListener('resize', () => { if (S.view === 'eng') drawCharts(); });\n\n  // Preferencias por navegador (opcionales)\n  try {\n    const w = Number(localStorage.getItem('a07-win')); if (w) { S.winS = w; $('win-seg').querySelectorAll('button').forEach(x => x.classList.toggle('active', Number(x.dataset.w) === w)); }\n    const v = localStorage.getItem('a07-view'); if (v === 'eng') document.querySelector('.view-btn[data-view=\"eng\"]').click();\n  } catch (e) { }\n\n  buildMimic();\n  renderActive(); renderAlarmLog(); renderAckLog();\n  requestAnimationFrame(frame);\n  connect();\n})();\n",
+        "output": "str",
+        "x": 380,
+        "y": 180,
+        "wires": [
+            [
+                "bdaed5d0747f6789"
+            ]
+        ]
+    },
+    {
+        "id": "bdaed5d0747f6789",
+        "type": "http response",
+        "z": "b41c932809e81bee",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "content-type": "application/javascript; charset=utf-8",
+            "cache-control": "no-cache"
+        },
+        "x": 570,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "df5f9d6aeefb773c",
+        "type": "mqtt in",
+        "z": "b41c932809e81bee",
+        "name": "telemetry (QoS0)",
+        "topic": "utm/iot/A07/telemetry",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "f5fb954d418a61e7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 260,
+        "wires": [
+            [
+                "cce5c3625cce8326",
+                "b2ea5723acda7f4f"
+            ]
+        ]
+    },
+    {
+        "id": "26d87d178caf96c0",
+        "type": "mqtt in",
+        "z": "b41c932809e81bee",
+        "name": "status (QoS1)",
+        "topic": "utm/iot/A07/status",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "f5fb954d418a61e7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "cce5c3625cce8326",
+                "b2ea5723acda7f4f"
+            ]
+        ]
+    },
+    {
+        "id": "6691ca28e995a8fc",
+        "type": "mqtt in",
+        "z": "b41c932809e81bee",
+        "name": "alarms (QoS1)",
+        "topic": "utm/iot/A07/alarms",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "f5fb954d418a61e7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 340,
+        "wires": [
+            [
+                "cce5c3625cce8326",
+                "b2ea5723acda7f4f"
+            ]
+        ]
+    },
+    {
+        "id": "39548fbf9edd7b2e",
+        "type": "mqtt in",
+        "z": "b41c932809e81bee",
+        "name": "alarms/active (QoS1)",
+        "topic": "utm/iot/A07/alarms/active",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "f5fb954d418a61e7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 380,
+        "wires": [
+            [
+                "cce5c3625cce8326",
+                "b2ea5723acda7f4f"
+            ]
+        ]
+    },
+    {
+        "id": "edcdfd35e2102727",
+        "type": "mqtt in",
+        "z": "b41c932809e81bee",
+        "name": "ack (QoS1)",
+        "topic": "utm/iot/A07/ack",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "f5fb954d418a61e7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 420,
+        "wires": [
+            [
+                "cce5c3625cce8326",
+                "b2ea5723acda7f4f"
+            ]
+        ]
+    },
+    {
+        "id": "e298e91cf1c65baf",
+        "type": "websocket in",
+        "z": "b41c932809e81bee",
+        "name": "navegador → /ws/a07",
+        "server": "a891cc73607f3329",
+        "client": "",
+        "x": 170,
+        "y": 480,
+        "wires": [
+            [
+                "cce5c3625cce8326"
+            ]
+        ]
+    },
+    {
+        "id": "cce5c3625cce8326",
+        "type": "function",
+        "z": "b41c932809e81bee",
+        "name": "Pasarela dashboard",
+        "func": "// =====================================================================\n// A07 · PASARELA DEL DASHBOARD (capa de presentación)\n// Esta pestaña es un CLIENTE MQTT independiente del simulador: solo conoce\n// lo que llega por el broker. Reenvía los datos al navegador por WebSocket\n// y publica en /commands lo que el operador ordena desde la interfaz.\n// Entradas: mqtt in (telemetry, status, alarms, alarms/active, ack),\n//           websocket in (navegador), restore/* (archivos al arrancar)\n// Salidas: 1 WebSocket → navegador | 2 MQTT → utm/iot/A07/commands\n//          3 archivo alarmas.jsonl | 4 archivo historico-AAAA-MM-DD.csv\n//          5 archivo eventos.jsonl (comandos y ACK)\n// =====================================================================\nconst HIST_MAX_S = 3600;  // se conservan 60 min de histórico (1 muestra/s)\nconst LOG_MAX = 300;\nconst BASE = 'utm/iot/A07/';\n\nfunction dataDir() {\n    const d = env.get('A07_DATA_DIR');\n    if (d) return d;\n    return (env.get('HOME') || env.get('USERPROFILE') || '.') + '/.node-red/a07-data';\n}\nfunction today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }\n\nlet G = context.get('G');\nlet fresh = false;\nif (!G) {\n    fresh = true;\n    G = { telemetry: null, status: null, active: null, history: [], alarmLog: [], ackLog: [], lastSampleSec: 0,\n          comms: { rx: {}, lastRxAt: null, lastSeq: null, seqGaps: 0, parseErrors: 0, cmdsSent: 0, latencyMs: null, since: new Date().toISOString() } };\n}\nconst out = [null, null, null, null, null];\nconst toWs = []; // mensajes al navegador\nfunction broadcast(obj) { toWs.push({ payload: JSON.stringify(obj) }); }\n// Si la pasarela se reinició (redeploy) con navegadores aún conectados,\n// se les pide que vuelvan a solicitar la instantánea completa.\nif (fresh) broadcast({ type: 'resync' });\n\n// ------------------------------------------------------------------\n// A) Restauración desde archivos (al iniciar el flujo)\n// ------------------------------------------------------------------\nif (msg.topic === 'restore/alarms') {\n    const lines = String(msg.payload || '').split('\\n').filter(Boolean);\n    const restored = [];\n    for (const l of lines.slice(-LOG_MAX)) { try { restored.push(JSON.parse(l)); } catch (e) { } }\n    G.alarmLog = restored.concat(G.alarmLog).slice(-LOG_MAX);\n    context.set('G', G);\n    node.warn('Persistencia: ' + restored.length + ' eventos de alarma restaurados');\n    out[0] = toWs; return out;\n}\nif (msg.topic === 'restore/history') {\n    const lines = String(msg.payload || '').split('\\n').filter(l => l && !l.startsWith('ts'));\n    const minT = Date.now() - HIST_MAX_S * 1000;\n    const rows = [];\n    for (const l of lines) {\n        const f = l.split(',');\n        const t = Date.parse(f[0]);\n        if (!isNaN(t) && t >= minT) rows.push([t, +f[1], +f[2], f[3] === '' ? null : +f[3], +f[4], +f[5], f[6] === '' ? null : +f[6]]);\n    }\n    G.history = rows.concat(G.history).slice(-HIST_MAX_S);\n    context.set('G', G);\n    node.warn('Persistencia: ' + rows.length + ' muestras de histórico restauradas');\n    broadcast({ type: 'resync' });\n    out[0] = toWs; return out;\n}\n\n// ------------------------------------------------------------------\n// B) Mensajes del navegador (WebSocket)\n// ------------------------------------------------------------------\nif (msg._session) {\n    let req;\n    try { req = JSON.parse(msg.payload); } catch (e) { return null; }\n    if (req.type === 'hello') {\n        // Respuesta solo a ese navegador (se conserva msg._session)\n        out[0] = { _session: msg._session, payload: JSON.stringify({\n            type: 'snapshot', telemetry: G.telemetry, status: G.status, active: G.active,\n            history: G.history, alarmLog: G.alarmLog, ackLog: G.ackLog, comms: G.comms, serverTime: new Date().toISOString() }) };\n        return out;\n    }\n    if (req.type === 'cmd' && req.cmd && req.cmd.action) {\n        const cmd = Object.assign({}, req.cmd);\n        cmd.cmdId = cmd.cmdId || ('web-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6));\n        cmd.ts = cmd.ts || new Date().toISOString();\n        cmd.source = cmd.source || 'dashboard-web';\n        G.comms.cmdsSent++;\n        context.set('G', G);\n        out[1] = { topic: BASE + 'commands', payload: cmd };\n        out[4] = { filename: dataDir() + '/eventos.jsonl', payload: JSON.stringify({ dir: 'OUT', topic: BASE + 'commands', at: new Date().toISOString(), msg: cmd }) };\n        broadcast({ type: 'cmd_sent', cmd: cmd });\n        out[0] = toWs;\n        return out;\n    }\n    return null;\n}\n\n// ------------------------------------------------------------------\n// C) Mensajes MQTT recibidos desde el broker\n// ------------------------------------------------------------------\nlet p = msg.payload;\nif (Buffer.isBuffer(p)) p = p.toString('utf8');\nif (typeof p === 'string') {\n    try { p = JSON.parse(p); } catch (e) { G.comms.parseErrors++; context.set('G', G); node.warn('JSON inválido en ' + msg.topic); return null; }\n}\nconst sub = msg.topic.startsWith(BASE) ? msg.topic.slice(BASE.length) : msg.topic;\nG.comms.rx[sub] = (G.comms.rx[sub] || 0) + 1;\nG.comms.lastRxAt = new Date().toISOString();\n\nswitch (sub) {\n    case 'telemetry': {\n        if (G.comms.lastSeq !== null && p.seq > G.comms.lastSeq + 1) G.comms.seqGaps += p.seq - G.comms.lastSeq - 1;\n        G.comms.lastSeq = p.seq;\n        G.comms.latencyMs = Date.now() - Date.parse(p.ts);\n        G.telemetry = p;\n        broadcast({ type: 'telemetry', data: p, comms: G.comms });\n        // Muestreo del histórico a 1 Hz + persistencia CSV\n        const t = Date.parse(p.ts), sec = Math.floor(t / 1000);\n        if (sec !== G.lastSampleSec) {\n            G.lastSampleSec = sec;\n            const d = p.data, k = p.kpi || {};\n            const row = [t, d.lineSpeed, d.speedSetpoint, d.lastFillLevel, k.unitsPerMin, k.rejectPct, k.availability];\n            G.history.push(row);\n            if (G.history.length > HIST_MAX_S) G.history.splice(0, G.history.length - HIST_MAX_S);\n            out[3] = { filename: dataDir() + '/historico-' + today() + '.csv',\n                       payload: [p.ts, d.lineSpeed, d.speedSetpoint, d.lastFillLevel === null ? '' : d.lastFillLevel, k.unitsPerMin, k.rejectPct, k.availability === null ? '' : k.availability, d.lineState, d.bottlesCounted].join(',') };\n        }\n        break;\n    }\n    case 'status':\n        G.status = p;\n        broadcast({ type: 'status', data: p });\n        break;\n    case 'alarms':\n        G.alarmLog.push(p);\n        if (G.alarmLog.length > LOG_MAX) G.alarmLog.shift();\n        broadcast({ type: 'alarm', data: p });\n        out[2] = { filename: dataDir() + '/alarmas.jsonl', payload: JSON.stringify(p) };\n        break;\n    case 'alarms/active':\n        G.active = p;\n        broadcast({ type: 'alarms_active', data: p });\n        break;\n    case 'ack':\n        G.ackLog.push(p);\n        if (G.ackLog.length > 50) G.ackLog.shift();\n        broadcast({ type: 'ack', data: p });\n        out[4] = { filename: dataDir() + '/eventos.jsonl', payload: JSON.stringify({ dir: 'IN', topic: msg.topic, at: new Date().toISOString(), msg: p }) };\n        break;\n}\ncontext.set('G', G);\nout[0] = toWs;\nnode.status({ fill: G.status && G.status.online ? 'green' : 'red', shape: 'dot', text: 'seq ' + G.comms.lastSeq + ' · gaps ' + G.comms.seqGaps + ' · alarmas ' + G.alarmLog.length });\nreturn out;\n",
+        "outputs": 5,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 360,
+        "wires": [
+            [
+                "ee6ecac3aa9943dd"
+            ],
+            [
+                "877042ff8deca9e0"
+            ],
+            [
+                "de53d68948ab98a8"
+            ],
+            [
+                "fe879af7d194f27c"
+            ],
+            [
+                "d6fe230bb8072557"
+            ]
+        ]
+    },
+    {
+        "id": "ee6ecac3aa9943dd",
+        "type": "websocket out",
+        "z": "b41c932809e81bee",
+        "name": "→ navegador",
+        "server": "a891cc73607f3329",
+        "client": "",
+        "x": 730,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "877042ff8deca9e0",
+        "type": "mqtt out",
+        "z": "b41c932809e81bee",
+        "name": "commands (QoS1, sin retain)",
+        "topic": "utm/iot/A07/commands",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "f5fb954d418a61e7",
+        "x": 770,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "de53d68948ab98a8",
+        "type": "file",
+        "z": "b41c932809e81bee",
+        "name": "append alarmas.jsonl",
+        "filename": "filename",
+        "filenameType": "msg",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "utf8",
+        "x": 750,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fe879af7d194f27c",
+        "type": "file",
+        "z": "b41c932809e81bee",
+        "name": "append historico.csv",
+        "filename": "filename",
+        "filenameType": "msg",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "utf8",
+        "x": 750,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d6fe230bb8072557",
+        "type": "file",
+        "z": "b41c932809e81bee",
+        "name": "append eventos.jsonl",
+        "filename": "filename",
+        "filenameType": "msg",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "utf8",
+        "x": 750,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "20bf0770e9fe9e40",
+        "type": "inject",
+        "z": "b41c932809e81bee",
+        "name": "al iniciar",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 560,
+        "wires": [
+            [
+                "0514c89b9fd0a0a9"
+            ]
+        ]
+    },
+    {
+        "id": "0514c89b9fd0a0a9",
+        "type": "function",
+        "z": "b41c932809e81bee",
+        "name": "Preparar lectura persistencia",
+        "func": "// =====================================================================\n// A07 · LECTURA DE PERSISTENCIA AL ARRANCAR\n// Prepara la lectura de los archivos locales (registro de alarmas e\n// histórico del día) para que el dashboard no pierda datos al reiniciar.\n// Carpeta: variable de entorno A07_DATA_DIR o ~/.node-red/a07-data\n// =====================================================================\nconst dir = env.get('A07_DATA_DIR') || ((env.get('HOME') || env.get('USERPROFILE') || '.') + '/.node-red/a07-data');\nconst d = new Date();\nconst today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');\nnode.status({ fill: 'blue', shape: 'dot', text: dir });\nreturn [[\n    { topic: 'restore/alarms', filename: dir + '/alarmas.jsonl' },\n    { topic: 'restore/history', filename: dir + '/historico-' + today + '.csv' }\n]];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 560,
+        "wires": [
+            [
+                "3e0533a5cd5c10b3"
+            ]
+        ]
+    },
+    {
+        "id": "3e0533a5cd5c10b3",
+        "type": "file in",
+        "z": "b41c932809e81bee",
+        "name": "leer archivo",
+        "filename": "filename",
+        "filenameType": "msg",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "utf8",
+        "allProps": false,
+        "x": 570,
+        "y": 560,
+        "wires": [
+            [
+                "cce5c3625cce8326"
+            ]
+        ]
+    },
+    {
+        "id": "ca61f54857424317",
+        "type": "catch",
+        "z": "b41c932809e81bee",
+        "name": "archivo inexistente",
+        "scope": [
+            "3e0533a5cd5c10b3"
+        ],
+        "uncaught": false,
+        "x": 380,
+        "y": 620,
+        "wires": [
+            [
+                "212e7f5cb3891ff7"
+            ]
+        ]
+    },
+    {
+        "id": "212e7f5cb3891ff7",
+        "type": "function",
+        "z": "b41c932809e81bee",
+        "name": "Primer arranque",
+        "func": "// Primer arranque: el archivo aún no existe. No es un error de operación.\n// Si es el histórico del día, se crea con su fila de encabezado.\nconst f = (msg.filename || '') + '';\nnode.status({ fill: 'grey', shape: 'ring', text: 'sin archivo previo: ' + f.split('/').pop() });\nif (f.indexOf('historico-') >= 0) {\n    return { filename: f, payload: 'ts,lineSpeed_envmin,speedSetpoint_envmin,lastFillLevel_pct,unitsPerMin,rejectPct,availabilityPct,lineState,bottlesCounted' };\n}\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 620,
+        "wires": [
+            [
+                "fe879af7d194f27c"
+            ]
+        ]
+    },
+    {
+        "id": "b2ea5723acda7f4f",
+        "type": "debug",
+        "z": "b41c932809e81bee",
+        "name": "mensajes MQTT recibidos",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 470,
+        "y": 260,
+        "wires": []
+    }
+]
